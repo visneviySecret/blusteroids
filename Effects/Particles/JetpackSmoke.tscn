@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://bh8jx3r2qvyxq"]
+
+[ext_resource type="Script" path="res://Scripts/Effects/jetpack_smoke.gd" id="1_jetpack_smoke"]
+
+[node name="JetpackSmoke" type="GPUParticles2D"]
+script = ExtResource("1_jetpack_smoke")
+max_intensity = 1.0
+min_velocity = 50.0
+max_velocity = 150.0
+smoke_color = Color(0.7, 0.7, 0.7, 0.6) 
