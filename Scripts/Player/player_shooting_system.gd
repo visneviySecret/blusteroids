@@ -85,46 +85,34 @@ func attempt_shoot():
 func shoot_laser(direction: Vector2):
 	"""Создает и запускает лазерный снаряд"""
 	if not projectile_parent:
+		print("ОШИБКА: projectile_parent не найден!")
 		return
 	
 	# Вычисляем точку выстрела с учетом поворота игрока
 	var rotated_offset = muzzle_offset.rotated(direction.angle())
 	var shoot_position = player_body.global_position + rotated_offset
 	
-	# Создаем лазерный снаряд используя статический метод
-	var laser = LaserProjectile.create_laser_projectile(shoot_position, direction, laser_speed, laser_damage)
+	print("Создаем лазер в позиции: ", shoot_position, " направление: ", direction)
+	print("Позиция игрока: ", player_body.global_position)
+	print("Смещение: ", rotated_offset)
 	
+	# Создаем лазерный снаряд используя статический метод, передавая ссылку на игрока
+	var laser = LaserProjectile.create_laser_projectile(shoot_position, direction, player_body, laser_speed, laser_damage)
+	
+	print("Лазер создан: ", laser)
+	print("Родитель для снарядов: ", projectile_parent)
+	print("Стрелок (игрок): ", player_body)
 	
 	# Добавляем лазер в сцену отложенно
 	projectile_parent.add_child.call_deferred(laser)
 	
-	# Создаем простой эффект выстрела (без сложных частиц)
-	create_simple_muzzle_flash(shoot_position)
+	print("Лазер добавлен в сцену отложенно. Дочерних узлов у projectile_parent: ", projectile_parent.get_child_count())
 	
+	# Убираем эффект вспышки выстрела
+	# create_simple_muzzle_flash(shoot_position)
+	
+	print("Лазерный выстрел завершен!")
 
-func create_simple_muzzle_flash(position: Vector2):
-	"""Создает простой эффект вспышки выстрела"""
-	var flash_rect = ColorRect.new()
-	flash_rect.size = Vector2(20, 20)
-	flash_rect.color = Color.YELLOW
-	flash_rect.position = Vector2(-10, -10)
-	
-	if projectile_parent:
-		# Добавляем вспышку отложенно
-		projectile_parent.add_child.call_deferred(flash_rect)
-		# Устанавливаем позицию отложенно
-		flash_rect.set_global_position.call_deferred(position)
-		
-		# Создаем таймер для удаления вспышки
-		var timer = Timer.new()
-		timer.wait_time = 0.3
-		timer.one_shot = true
-		timer.autostart = true  # Автозапуск
-		timer.timeout.connect(func(): flash_rect.queue_free())
-		
-		# Добавляем таймер в дерево сцены отложенно
-		flash_rect.add_child.call_deferred(timer)
-		
 # === УТИЛИТАРНЫЕ МЕТОДЫ ===
 
 func can_fire() -> bool:

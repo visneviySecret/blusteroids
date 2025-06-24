@@ -12,6 +12,7 @@ class_name LaserProjectile
 var velocity: Vector2 = Vector2.ZERO
 var time_alive: float = 0.0
 var is_initialized: bool = false
+var shooter: Node2D = null  # Ссылка на того, кто выпустил лазер
 
 # Визуальные компоненты
 var laser_particles: CPUParticles2D
@@ -49,13 +50,6 @@ func setup_visuals():
 	bright_rect.color = Color.WHITE
 	bright_rect.position = Vector2(laser_length * 0.1, -laser_width * 0.25)
 	add_child(bright_rect)
-	
-	# Добавляем огромный желтый прямоугольник для максимальной видимости
-	var mega_rect = ColorRect.new()
-	mega_rect.size = Vector2(laser_length * 1.5, laser_width * 3)
-	mega_rect.color = Color(1.0, 1.0, 0.0, 0.7)  # Полупрозрачный желтый
-	mega_rect.position = Vector2(-laser_length * 0.25, -laser_width * 1.5)
-	add_child(mega_rect)
 
 func setup_collision():
 	"""Настраивает коллизию лазера"""
@@ -65,13 +59,23 @@ func setup_collision():
 	collision_shape.shape = rect_shape
 	collision_shape.position = Vector2(laser_length / 2, 0)
 	add_child(collision_shape)
+	
+	# Настраиваем collision layers для исключения столкновений с игроком
+	# Лазер находится на слое 2, игрок на слое 1
+	collision_layer = 2  # Лазер находится на слое 2
+	collision_mask = 1 + 4  # Лазер сталкивается со слоями 1 (враги) и 3 (препятствия), но не с игроком
+	
+	print("Настроена коллизия лазера: layer=", collision_layer, " mask=", collision_mask)
 
-func initialize(start_position: Vector2, direction: Vector2):
-	"""Инициализирует лазер с начальной позицией и направлением"""
+func initialize(start_position: Vector2, direction: Vector2, shooter_ref: Node2D = null):
+	"""Инициализирует лазер с начальной позицией, направлением и ссылкой на стрелка"""
 	global_position = start_position
 	velocity = direction.normalized() * speed
 	# Поворачиваем лазер в направлении движения
 	rotation = direction.angle()
+	
+	# Сохраняем ссылку на стрелка
+	shooter = shooter_ref
 	
 	# Убираем принудительный вызов _ready - он должен вызываться автоматически движком
 	# if not has_method("setup_visuals") or get_child_count() == 0:
@@ -95,6 +99,13 @@ func _physics_process(delta):
 
 func _on_body_entered(body):
 	"""Обработка столкновения с телом"""
+	# Игнорируем столкновение со стрелком
+	if body == shooter:
+		print("Лазер игнорирует столкновение со стрелком: ", body)
+		return
+	
+	print("Лазер столкнулся с телом: ", body)
+	
 	if body.has_method("take_damage"):
 		body.take_damage(damage)
 	
@@ -106,6 +117,13 @@ func _on_body_entered(body):
 
 func _on_area_entered(area):
 	"""Обработка столкновения с областью"""
+	# Игнорируем столкновение со стрелком (если он Area2D)
+	if area == shooter:
+		print("Лазер игнорирует столкновение с областью стрелка: ", area)
+		return
+	
+	print("Лазер столкнулся с областью: ", area)
+	
 	if area.has_method("take_damage"):
 		area.take_damage(damage)
 	
@@ -146,10 +164,10 @@ func destroy():
 	queue_free()
 
 # Статический метод для создания лазера
-static func create_laser_projectile(start_position: Vector2, direction: Vector2, laser_speed: float = 1000.0, laser_damage: float = 10.0) -> LaserProjectile:
+static func create_laser_projectile(start_position: Vector2, direction: Vector2, shooter_ref: Node2D = null, laser_speed: float = 1000.0, laser_damage: float = 10.0) -> LaserProjectile:
 	"""Создает и настраивает новый лазерный снаряд"""
 	var laser = LaserProjectile.new()
 	laser.speed = laser_speed
 	laser.damage = laser_damage
-	laser.initialize(start_position, direction)
+	laser.initialize(start_position, direction, shooter_ref)
 	return laser 
