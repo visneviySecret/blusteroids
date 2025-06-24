@@ -1,7 +1,6 @@
 extends CharacterBody2D
 
 # Импорт класса эффекта дыма
-const JetpackSmokeEffect = preload("res://Scripts/Effects/jetpack_smoke.gd")
 
 # Максимальная скорость движения персонажа
 @export var max_speed: float = 500.0
@@ -15,13 +14,10 @@ const JetpackSmokeEffect = preload("res://Scripts/Effects/jetpack_smoke.gd")
 # Направление ввода
 var input_vector: Vector2 = Vector2.ZERO
 # Эффект дыма джет-пака
-var jetpack_smoke: JetpackSmokeEffect
 # Ссылка на спрайт игрока
 var player_sprite: Sprite2D
 
 func _ready():
-	# Инициализация персонажа
-	setup_jetpack_effect()
 	# Получаем ссылку на спрайт (пробуем разные варианты)
 	find_player_sprite()
 
@@ -47,23 +43,7 @@ func _physics_process(delta):
 	handle_input()
 	move_player(delta)
 	apply_tilt(delta)
-	update_jetpack_effect()
 
-func setup_jetpack_effect():
-	# Загружаем и создаем эффект дыма
-	var smoke_scene = preload("res://Effects/Particles/JetpackSmoke.tscn")
-	jetpack_smoke = smoke_scene.instantiate()
-	
-	# Добавляем как дочерний элемент
-	add_child(jetpack_smoke)
-	
-	# Позиционируем за спиной игрока
-	jetpack_smoke.position = Vector2(0, 25)  # Сзади и снизу от игрока
-
-func update_jetpack_effect():
-	# Обновляем эффект дыма на основе текущей скорости
-	if jetpack_smoke:
-		jetpack_smoke.update_effect(velocity, max_speed)
 
 func handle_input():
 	# Сброс вектора ввода
