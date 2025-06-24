@@ -9,6 +9,10 @@ extends CharacterBody2D
 # Максимальный угол наклона в радианах
 @export var max_tilt_angle: float = 0.3
 
+# Параметры доджа
+@export var dodge_force: float = 800.0  # Сила доджа
+@export var dodge_cooldown: float = 1.0  # Время перезарядки доджа в секундах
+
 # Направление ввода
 var input_vector: Vector2 = Vector2.ZERO
 # Ссылка на спрайт игрока
@@ -17,6 +21,11 @@ var player_sprite: Sprite2D
 var smoke_system: SmokeSystem
 # Интеграция крюк-кошки
 var grappling_integration: PlayerGrapplingIntegration
+
+# Переменные для доджа
+var dodge_timer: float = 0.0
+var is_dodging: bool = false
+var dodge_direction: Vector2 = Vector2.ZERO
 
 func _ready():
 	# Получаем ссылку на спрайт (пробуем разные варианты)
@@ -59,6 +68,9 @@ func setup_grappling_integration():
 	grappling_integration.setup_for_player(self)
 
 func _physics_process(delta):
+	# Обновляем таймер доджа
+	update_dodge_timer(delta)
+	
 	# Обработка ввода и движения
 	handle_input()
 	# Обработка ввода крюк-кошки (клавиатурные команды)
@@ -81,9 +93,39 @@ func handle_input():
 	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		input_vector.x += 1
 	
+	# Обработка доджа
+	# Перенесено в _input для правильной обработки
+	
 	# Нормализация вектора для диагонального движения
 	if input_vector.length() > 0:
 		input_vector = input_vector.normalized()
+
+func update_dodge_timer(delta):
+	"""Обновляет таймер перезарядки доджа"""
+	if dodge_timer > 0:
+		dodge_timer -= delta
+		if dodge_timer <= 0:
+			is_dodging = false
+
+func perform_dodge():
+	"""Выполняет додж в направлении движения"""
+	# Проверяем, можем ли мы выполнить додж
+	if dodge_timer > 0:
+		return  # Додж на перезарядке
+	
+	# Проверяем, нажимает ли игрок клавиши движения
+	if input_vector.length() == 0:
+		return  # Игрок не нажимает клавиши движения
+	
+	# Выполняем додж в направлении ввода (а не текущего движения)
+	dodge_direction = input_vector.normalized()
+	velocity += dodge_direction * dodge_force
+	
+	# Запускаем перезарядку
+	dodge_timer = dodge_cooldown
+	is_dodging = true
+	
+	print("Додж выполнен в направлении: ", dodge_direction)
 
 func move_player(delta):
 	# Если есть ввод - ускоряемся в направлении ввода
@@ -176,3 +218,26 @@ func start_swinging_mechanics():
 func start_pulling_mechanics(target_body: Node2D):
 	"""Начинает механику подтягивания объектов"""
 	pass
+
+# Утилитарные методы для доджа
+func can_dodge() -> bool:
+	"""Проверяет, может ли игрок выполнить додж"""
+	return dodge_timer <= 0 and input_vector.length() > 0
+
+func is_dodge_on_cooldown() -> bool:
+	"""Проверяет, находится ли додж на перезарядке"""
+	return dodge_timer > 0
+
+func get_dodge_cooldown_remaining() -> float:
+	"""Возвращает оставшееся время перезарядки доджа"""
+	return max(0.0, dodge_timer)
+
+func get_dodge_cooldown_progress() -> float:
+	"""Возвращает прогресс перезарядки доджа (0.0 - готов, 1.0 - только что использован)"""
+	return get_dodge_cooldown_remaining() / dodge_cooldown
+
+func _input(event):
+	"""Обработка событий ввода"""
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_SPACE:
+			perform_dodge()

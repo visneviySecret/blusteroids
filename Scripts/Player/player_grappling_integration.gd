@@ -48,11 +48,7 @@ func handle_grappling_hook_input():
 	if not grappling_hook:
 		return
 	
-	# Обработка клавиатурного ввода
-	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("ui_select"):
-		launch_grappling_hook()
-	
-	# Отсоединение крюка при повторном нажатии или других условиях
+	# Отсоединение крюка при нажатии Escape
 	if Input.is_action_just_pressed("ui_cancel"):
 		if grappling_hook.is_hook_active():
 			grappling_hook.retract_hook()
