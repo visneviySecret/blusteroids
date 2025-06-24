@@ -10,6 +10,8 @@ var smoke_system: SmokeSystem
 var grappling_integration: PlayerGrapplingIntegration
 # Контроллер движения
 var movement_controller: PlayerMovementController
+# Система стрельбы
+var shooting_system: PlayerShootingSystem
 
 func _ready():
 	# Получаем ссылку на спрайт
@@ -18,6 +20,7 @@ func _ready():
 	setup_smoke_system()
 	setup_grappling_integration()
 	setup_movement_controller()
+	setup_shooting_system()
 
 func find_player_sprite():
 	# Пробуем найти спрайт разными способами
@@ -48,17 +51,25 @@ func setup_grappling_integration():
 	# Создаем и настраиваем интеграцию крюк-кошки
 	grappling_integration = PlayerGrapplingIntegration.new()
 	grappling_integration.name = "GrapplingIntegration"
-	add_child(grappling_integration)
-	# Настраиваем для этого игрока
-	grappling_integration.setup_for_player(self)
+	add_child.call_deferred(grappling_integration)
+	# Настраиваем для этого игрока (отложенно)
+	grappling_integration.setup_for_player.call_deferred(self)
 
 func setup_movement_controller():
 	# Создаем и настраиваем контроллер движения
 	movement_controller = PlayerMovementController.new()
 	movement_controller.name = "MovementController"
-	add_child(movement_controller)
-	# Настраиваем для этого игрока
-	movement_controller.setup_for_player(self, player_sprite)
+	add_child.call_deferred(movement_controller)
+	# Настраиваем для этого игрока (отложенно)
+	movement_controller.setup_for_player.call_deferred(self, player_sprite)
+
+func setup_shooting_system():
+	# Создаем и настраиваем систему стрельбы
+	shooting_system = PlayerShootingSystem.new()
+	shooting_system.name = "ShootingSystem"
+	add_child.call_deferred(shooting_system)
+	# Настраиваем для этого игрока (отложенно)
+	shooting_system.setup_for_player.call_deferred(self)
 
 func _physics_process(delta):
 	# Обновляем движение через контроллер
@@ -115,6 +126,29 @@ func is_moving() -> bool:
 	if movement_controller:
 		return movement_controller.is_moving()
 	return false
+
+# Утилитарные методы для стрельбы
+func can_shoot() -> bool:
+	"""Проверяет, может ли игрок стрелять"""
+	if shooting_system:
+		return shooting_system.can_fire()
+	return false
+
+func get_fire_cooldown_remaining() -> float:
+	"""Возвращает оставшееся время перезарядки стрельбы"""
+	if shooting_system:
+		return shooting_system.get_fire_cooldown_remaining()
+	return 0.0
+
+func set_fire_rate(new_rate: float):
+	"""Устанавливает скорострельность"""
+	if shooting_system:
+		shooting_system.set_fire_rate(new_rate)
+
+func set_laser_damage(new_damage: float):
+	"""Устанавливает урон лазера"""
+	if shooting_system:
+		shooting_system.set_laser_damage(new_damage)
 
 # Опциональные методы для обработки событий крюка (можно переопределить в наследниках)
 func on_hook_attached(position: Vector2):
