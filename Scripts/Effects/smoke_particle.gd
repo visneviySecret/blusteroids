@@ -2,7 +2,7 @@ extends Node2D
 
 # Параметры частицы дыма
 @export var initial_velocity: Vector2 = Vector2.ZERO
-@export var lifetime: float = 2.0
+@export var lifetime: float = 10.0
 @export var fade_speed: float = 1.0
 @export var scale_speed: float = 0.5
 @export var drift_force: float = 50.0
