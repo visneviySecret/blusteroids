@@ -11,6 +11,11 @@ var player_reference: Node2D
 @export var pull_speed: float = 1200.0  # Скорость притягивания (увеличена)
 var is_pulling_to_target: bool = false
 var pull_target_position: Vector2
+var pull_target_object: Node2D = null  # Объект, к которому притягиваемся
+
+# Состояние езды на астероиде
+var is_riding_asteroid: bool = false
+var current_asteroid: Node2D = null
 
 func _ready():
 	# Подключаем обработку ввода
@@ -48,8 +53,11 @@ func _input(event):
 	# Обработка событий мыши
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			# Если едем на астероиде - слезаем с него
+			if is_riding_asteroid:
+				stop_riding_asteroid()
 			# Если крюк активен - отпускаем его, если нет - запускаем
-			if grappling_hook.is_hook_active():
+			elif grappling_hook.is_hook_active():
 				grappling_hook.retract_hook()
 			else:
 				launch_grappling_hook()
@@ -88,15 +96,74 @@ func pull_player_to_target(delta):
 	var direction_to_target = (pull_target_position - player_reference.global_position).normalized()
 	var distance_to_target = player_reference.global_position.distance_to(pull_target_position)
 	
-	# Если достигли цели, останавливаем притягивание
-	if distance_to_target < 50.0:  # Останавливаемся на расстоянии 50 пикселей от цели
+	# Если достигли цели, начинаем езду на астероиде
+	if distance_to_target < 120.0:  # Увеличенное расстояние для посадки на верхушку
 		is_pulling_to_target = false
+		start_riding_asteroid()
 		return
 	
 	# Применяем силу притягивания к игроку
 	if player_reference.has_method("set") and "velocity" in player_reference:
 		var pull_velocity = direction_to_target * pull_speed
 		player_reference.velocity = player_reference.velocity.lerp(pull_velocity, 8.0 * delta)
+
+func start_riding_asteroid():
+	"""Начинает езду на астероиде"""
+	if not pull_target_object or is_riding_asteroid:
+		return
+	
+	# Проверяем, что объект - это астероид
+	if pull_target_object.has_method("start_riding"):
+		var success = pull_target_object.start_riding(player_reference)
+		if success:
+			is_riding_asteroid = true
+			current_asteroid = pull_target_object
+			
+			# Отключаем обычное движение игрока
+			disable_player_movement()
+			
+			# Возвращаем крюк к игроку
+			if grappling_hook and grappling_hook.is_hook_active():
+				grappling_hook.retract_hook()
+
+func stop_riding_asteroid():
+	"""Останавливает езду на астероиде"""
+	if not is_riding_asteroid or not current_asteroid:
+		return
+	
+	# Останавливаем езду на астероиде
+	if current_asteroid.has_method("stop_riding"):
+		current_asteroid.stop_riding()
+	
+	is_riding_asteroid = false
+	current_asteroid = null
+	
+	# Включаем обычное движение игрока
+	enable_player_movement()
+
+func disable_player_movement():
+	"""Отключает систему движения игрока"""
+	if player_reference and player_reference.has_method("get"):
+		# Отключаем контроллер движения игрока
+		if "movement_controller" in player_reference and player_reference.movement_controller:
+			player_reference.movement_controller.set_physics_process(false)
+		
+		# Сбрасываем вращение игрока и фиксируем его
+		if player_reference.has_method("get") and "player_sprite" in player_reference:
+			var sprite = player_reference.player_sprite
+			if sprite:
+				sprite.rotation = 0.0
+				sprite.skew = 0.0
+		
+		# Также сбрасываем вращение самого игрока
+		player_reference.rotation = 0.0
+
+func enable_player_movement():
+	"""Включает систему движения игрока"""
+	if player_reference and player_reference.has_method("get"):
+		# Включаем контроллер движения игрока
+		if "movement_controller" in player_reference and player_reference.movement_controller:
+			player_reference.movement_controller.set_physics_process(true)
 
 # Обработчики сигналов крюк-кошки
 func _on_hook_attached(position: Vector2):
@@ -113,6 +180,7 @@ func _on_hook_detached():
 	"""Вызывается когда крюк отсоединяется"""
 	# Останавливаем притягивание
 	is_pulling_to_target = false
+	pull_target_object = null
 	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_detached"):
@@ -120,13 +188,8 @@ func _on_hook_detached():
 
 func _on_hook_hit_target(body: Node2D):
 	"""Вызывается когда крюк попадает в объект"""
-	# Здесь можно добавить специфичную логику для разных типов объектов
-	
-	# Пример будущей логики:
-	# if body.has_method("can_be_grappled") and body.can_be_grappled():
-	#     start_swinging_mechanics()
-	# elif body.is_in_group("movable_objects"):
-	#     start_pulling_mechanics(body)
+	# Сохраняем ссылку на объект для дальнейшего использования
+	pull_target_object = body
 	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_hit_target"):
