@@ -141,3 +141,4 @@ func update_effect(velocity: Vector2, max_speed: float):
 			set_intensity(current_intensity * 0.95)  # Постепенное затухание
 		else:
 			stop_emission() 
+ 

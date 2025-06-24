@@ -21,7 +21,7 @@ var player_sprite: Sprite2D
 
 func _ready():
 	# Инициализация персонажа
-	# setup_jetpack_effect()
+	setup_jetpack_effect()
 	# Получаем ссылку на спрайт (пробуем разные варианты)
 	find_player_sprite()
 

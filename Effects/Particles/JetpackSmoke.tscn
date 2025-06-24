@@ -5,6 +5,6 @@
 [node name="JetpackSmoke" type="GPUParticles2D"]
 script = ExtResource("1_jetpack_smoke")
 max_intensity = 1.0
-min_velocity = 50.0
-max_velocity = 150.0
+min_velocity = 25.0
+max_velocity = 75.0
 smoke_color = Color(0.7, 0.7, 0.7, 0.6) 
