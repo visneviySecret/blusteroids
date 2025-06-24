@@ -1,6 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://dm7xvmwbyolcb"]
+[gd_scene load_steps=7 format=3 uid="uid://dm7xvmwbyolcb"]
 
 [ext_resource type="Script" uid="uid://y882m5b5njyl" path="res://Scripts/Player/player.gd" id="2_06yma"]
+[ext_resource type="Texture2D" uid="uid://cq2ysgr8tb7qy" path="res://Assets/Images/Asteroid/Asteroid.svg" id="2_31fxm"]
+[ext_resource type="Script" path="res://Scripts/asteroid.gd" id="3_asteroid"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_j4qrl"]
 load_path = "res://.godot/imported/Player-torso 1.png-e6fbc349b1641de2fc48c2a98a79ce8c.ctex"
@@ -8,7 +10,12 @@ load_path = "res://.godot/imported/Player-torso 1.png-e6fbc349b1641de2fc48c2a98a
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_j4qrl"]
 size = Vector2(60.5, 128)
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_06yma"]
+radius = 97.0
+height = 194.0
+
 [node name="MainScene" type="Node2D"]
+position = Vector2(5, -1)
 
 [node name="Player" type="CharacterBody2D" parent="."]
 script = ExtResource("2_06yma")
@@ -21,3 +28,15 @@ texture = SubResource("CompressedTexture2D_j4qrl")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 position = Vector2(-32.25, 47)
 shape = SubResource("RectangleShape2D_j4qrl")
+
+[node name="Asteroid" type="RigidBody2D" parent="."]
+script = ExtResource("3_asteroid")
+
+[node name="Sprite2D" type="Sprite2D" parent="Asteroid"]
+position = Vector2(356.944, 312.75)
+scale = Vector2(4.07778, 4.07778)
+texture = ExtResource("2_31fxm")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Asteroid"]
+position = Vector2(356.944, 312.75)
+shape = SubResource("CapsuleShape2D_06yma")

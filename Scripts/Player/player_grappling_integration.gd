@@ -6,9 +6,17 @@ class_name PlayerGrapplingIntegration
 var grappling_hook: GrapplingHook
 var player_reference: Node2D
 
+# Параметры притягивания
+@export var pull_force: float = 800.0  # Сила притягивания к объекту
+@export var pull_speed: float = 1200.0  # Скорость притягивания (увеличена)
+var is_pulling_to_target: bool = false
+var pull_target_position: Vector2
+
 func _ready():
 	# Подключаем обработку ввода
 	set_process_input(true)
+	# Подключаем физический процесс для притягивания
+	set_physics_process(true)
 
 func setup_for_player(player: Node2D):
 	"""Настраивает систему крюк-кошки для указанного игрока"""
@@ -40,17 +48,19 @@ func _input(event):
 	# Обработка событий мыши
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			launch_grappling_hook()
+			# Если крюк активен - отпускаем его, если нет - запускаем
+			if grappling_hook.is_hook_active():
+				grappling_hook.retract_hook()
+			else:
+				launch_grappling_hook()
 
 func handle_grappling_hook_input():
 	"""Обработка ввода крюк-кошки (вызывается из _physics_process игрока)"""
 	if not grappling_hook:
 		return
 	
-	# Отсоединение крюка при нажатии Escape
-	if Input.is_action_just_pressed("ui_cancel"):
-		if grappling_hook.is_hook_active():
-			grappling_hook.retract_hook()
+	# Убираем обработку Escape, теперь используем только ПКМ
+	pass
 
 func launch_grappling_hook():
 	"""Запускает крюк-кошку в направлении курсора"""
@@ -64,16 +74,45 @@ func launch_grappling_hook():
 	# Запускаем крюк в направлении курсора
 	var _success = grappling_hook.launch_hook(player_position, mouse_position)
 	
+func _physics_process(delta):
+	"""Обновляет механику притягивания"""
+	if is_pulling_to_target and player_reference:
+		pull_player_to_target(delta)
+
+func pull_player_to_target(delta):
+	"""Притягивает игрока к цели"""
+	if not player_reference:
+		return
+	
+	# Вычисляем направление к цели
+	var direction_to_target = (pull_target_position - player_reference.global_position).normalized()
+	var distance_to_target = player_reference.global_position.distance_to(pull_target_position)
+	
+	# Если достигли цели, останавливаем притягивание
+	if distance_to_target < 50.0:  # Останавливаемся на расстоянии 50 пикселей от цели
+		is_pulling_to_target = false
+		return
+	
+	# Применяем силу притягивания к игроку
+	if player_reference.has_method("set") and "velocity" in player_reference:
+		var pull_velocity = direction_to_target * pull_speed
+		player_reference.velocity = player_reference.velocity.lerp(pull_velocity, 8.0 * delta)
+
 # Обработчики сигналов крюк-кошки
 func _on_hook_attached(position: Vector2):
 	"""Вызывается когда крюк прикрепляется к объекту"""
+	# Начинаем притягивание игрока к точке зацепления
+	pull_target_position = position
+	is_pulling_to_target = true
+	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_attached"):
 		player_reference.on_hook_attached(position)
 
 func _on_hook_detached():
 	"""Вызывается когда крюк отсоединяется"""
-	# Здесь можно добавить логику завершения зацепления
+	# Останавливаем притягивание
+	is_pulling_to_target = false
 	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_detached"):
