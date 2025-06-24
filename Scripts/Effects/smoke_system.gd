@@ -75,7 +75,7 @@ func spawn_smoke_particle():
 		target_velocity = target_node.get_velocity()
 	elif "velocity" in target_node:
 		target_velocity = target_node.velocity
-	dd
+	
 	# Позиционируем частицу позади цели
 	var spawn_offset = Vector2(
         -25, 50

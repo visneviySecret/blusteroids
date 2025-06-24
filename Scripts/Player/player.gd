@@ -15,12 +15,16 @@ var input_vector: Vector2 = Vector2.ZERO
 var player_sprite: Sprite2D
 # Система дыма
 var smoke_system: SmokeSystem
+# Интеграция крюк-кошки
+var grappling_integration: PlayerGrapplingIntegration
 
 func _ready():
 	# Получаем ссылку на спрайт (пробуем разные варианты)
 	find_player_sprite()
 	# Подключаем систему дыма
 	setup_smoke_system()
+	# Подключаем интеграцию крюк-кошки
+	setup_grappling_integration()
 
 func find_player_sprite():
 	# Пробуем найти спрайт разными способами
@@ -46,9 +50,20 @@ func setup_smoke_system():
 	# Устанавливаем себя как цель для системы дыма
 	smoke_system.set_target.call_deferred(self)
 
+func setup_grappling_integration():
+	# Создаем и настраиваем интеграцию крюк-кошки
+	grappling_integration = PlayerGrapplingIntegration.new()
+	grappling_integration.name = "GrapplingIntegration"
+	add_child(grappling_integration)
+	# Настраиваем для этого игрока
+	grappling_integration.setup_for_player(self)
+
 func _physics_process(delta):
 	# Обработка ввода и движения
 	handle_input()
+	# Обработка ввода крюк-кошки (клавиатурные команды)
+	if grappling_integration:
+		grappling_integration.handle_grappling_hook_input()
 	move_player(delta)
 	apply_tilt(delta)
 
@@ -127,3 +142,37 @@ func enable_smoke(enabled: bool = true):
 func clear_smoke():
 	if smoke_system:
 		smoke_system.clear_all_particles()
+
+# Утилитарные методы для крюк-кошки
+func get_grappling_hook():
+	"""Возвращает ссылку на систему крюк-кошки"""
+	if grappling_integration:
+		return grappling_integration.get_grappling_hook()
+	return null
+
+func is_hook_active() -> bool:
+	"""Проверяет, активен ли крюк"""
+	if grappling_integration:
+		return grappling_integration.is_hook_active()
+	return false
+
+# Опциональные методы для обработки событий крюка (можно переопределить в наследниках)
+func on_hook_attached(position: Vector2):
+	"""Вызывается когда крюк прикрепляется к объекту"""
+	pass
+
+func on_hook_detached():
+	"""Вызывается когда крюк отсоединяется"""
+	pass
+
+func on_hook_hit_target(body: Node2D):
+	"""Вызывается когда крюк попадает в объект"""
+	pass
+
+func start_swinging_mechanics():
+	"""Начинает механику раскачивания на крюке"""
+	pass
+
+func start_pulling_mechanics(target_body: Node2D):
+	"""Начинает механику подтягивания объектов"""
+	pass
