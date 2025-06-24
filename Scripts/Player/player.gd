@@ -1,7 +1,5 @@
 extends CharacterBody2D
 
-# Импорт класса эффекта дыма
-
 # Максимальная скорость движения персонажа
 @export var max_speed: float = 500.0
 # Скорость ускорения
@@ -13,13 +11,16 @@ extends CharacterBody2D
 
 # Направление ввода
 var input_vector: Vector2 = Vector2.ZERO
-# Эффект дыма джет-пака
 # Ссылка на спрайт игрока
 var player_sprite: Sprite2D
+# Система дыма
+var smoke_system: SmokeSystem
 
 func _ready():
 	# Получаем ссылку на спрайт (пробуем разные варианты)
 	find_player_sprite()
+	# Подключаем систему дыма
+	setup_smoke_system()
 
 func find_player_sprite():
 	# Пробуем найти спрайт разными способами
@@ -38,12 +39,18 @@ func find_player_sprite():
 		for child in get_children():
 			print("- ", child.name, " (", child.get_class(), ")")
 
+func setup_smoke_system():
+	# Создаем и настраиваем систему дыма
+	smoke_system = SmokeSystem.new()
+	get_parent().add_child.call_deferred(smoke_system)
+	# Устанавливаем себя как цель для системы дыма
+	smoke_system.set_target.call_deferred(self)
+
 func _physics_process(delta):
 	# Обработка ввода и движения
 	handle_input()
 	move_player(delta)
 	apply_tilt(delta)
-
 
 func handle_input():
 	# Сброс вектора ввода
@@ -111,3 +118,12 @@ func apply_tilt_to_body(delta):
 	
 	# Плавно применяем поворот
 	rotation = lerp(rotation, target_rotation, 10.0 * delta)
+
+# Методы для управления системой дыма
+func enable_smoke(enabled: bool = true):
+	if smoke_system:
+		smoke_system.enable_smoke(enabled)
+
+func clear_smoke():
+	if smoke_system:
+		smoke_system.clear_all_particles()
