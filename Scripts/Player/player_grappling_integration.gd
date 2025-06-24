@@ -62,7 +62,7 @@ func launch_grappling_hook():
 	var player_position = player_reference.global_position
 	
 	# Запускаем крюк в направлении курсора
-	var success = grappling_hook.launch_hook(player_position, mouse_position)
+	var _success = grappling_hook.launch_hook(player_position, mouse_position)
 	
 # Обработчики сигналов крюк-кошки
 func _on_hook_attached(position: Vector2):

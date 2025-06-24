@@ -162,6 +162,6 @@ func start_swinging_mechanics():
 	"""Начинает механику раскачивания на крюке"""
 	pass
 
-func start_pulling_mechanics(target_body: Node2D):
+func start_pulling_mechanics(_target_body: Node2D):
 	"""Начинает механику подтягивания объектов"""
 	pass
