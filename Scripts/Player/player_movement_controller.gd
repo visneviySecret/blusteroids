@@ -25,9 +25,16 @@ var dodge_timer: float = 0.0
 var is_dodging: bool = false
 var dodge_direction: Vector2 = Vector2.ZERO
 
+# Параметры движения для общей системы
+var movement_params: CommonMovementSystem.MovementParams
+
 func _ready():
 	# Подключаем обработку ввода
 	set_process_input(true)
+	# Инициализируем параметры движения
+	movement_params = CommonMovementSystem.MovementParams.new(
+		max_speed, acceleration, friction, max_tilt_angle, dodge_force, dodge_cooldown
+	)
 
 func setup_for_player(player: CharacterBody2D, sprite: Sprite2D = null):
 	"""Настраивает контроллер для указанного игрока"""
@@ -69,10 +76,12 @@ func update_movement(delta):
 	if not player_body:
 		return
 		
-	# Обновляем таймер доджа
-	update_dodge_timer(delta)
+	# Обновляем таймер доджа (используя общую систему)
+	var dodge_result = CommonMovementSystem.update_dodge_timer(dodge_timer, delta)
+	dodge_timer = dodge_result[0]
+	is_dodging = dodge_result[1]
 	
-	# Обрабатываем ввод
+	# Обрабатываем ввод (используя общую систему)
 	handle_input()
 	
 	# Применяем движение
@@ -82,18 +91,18 @@ func update_movement(delta):
 	apply_tilt(delta)
 
 func handle_input():
-	"""Обработка ввода движения"""
-	# Сброс вектора ввода
-	input_vector = Vector2.ZERO
+	"""Обработка ввода движения (теперь использует общую систему)"""
+	# Получаем ввод через общую систему, но также поддерживаем стрелки
+	input_vector = CommonMovementSystem.get_wasd_input()
 	
-	# Проверка нажатых клавиш WASD
-	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+	# Дополнительно проверяем стрелки для совместимости
+	if Input.is_action_pressed("ui_up"):
 		input_vector.y -= 1
-	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+	if Input.is_action_pressed("ui_down"):
 		input_vector.y += 1
-	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+	if Input.is_action_pressed("ui_left"):
 		input_vector.x -= 1
-	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+	if Input.is_action_pressed("ui_right"):
 		input_vector.x += 1
 	
 	# Нормализация вектора для диагонального движения
@@ -101,85 +110,50 @@ func handle_input():
 		input_vector = input_vector.normalized()
 
 func apply_movement(delta):
-	"""Применяет движение к игроку"""
+	"""Применяет движение к игроку (используя общую систему)"""
 	if not player_body:
 		return
-		
-	# Если есть ввод - ускоряемся в направлении ввода
-	if input_vector.length() > 0:
-		player_body.velocity = player_body.velocity.move_toward(input_vector * max_speed, acceleration * delta)
-	else:
-		# Если нет ввода - замедляемся до полной остановки
-		player_body.velocity = player_body.velocity.move_toward(Vector2.ZERO, friction * delta)
+	
+	# Используем общую систему для вычисления новой скорости
+	player_body.velocity = CommonMovementSystem.apply_movement_to_velocity(
+		player_body.velocity, input_vector, movement_params, delta
+	)
 	
 	# Применение движения с использованием встроенного метода CharacterBody2D
 	player_body.move_and_slide()
 
 func apply_tilt(delta):
-	"""Применяет наклон к спрайту игрока"""
-	if not player_sprite or not player_body:
-		# Если спрайт не найден, применяем наклон к самому CharacterBody2D
-		apply_tilt_to_body(delta)
-		return
-		
-	# Вычисляем целевой угол наклона на основе скорости
-	var target_rotation: float = 0.0
-	var target_skew: float = 0.0
-	
-	# Наклон при движении по горизонтали (влево/вправо)
-	if abs(player_body.velocity.x) > abs(player_body.velocity.y):
-		target_rotation = player_body.velocity.x / max_speed * max_tilt_angle
-		target_skew = 0.0
-	else:
-		# При движении вверх - наклон назад, вниз - вперед
-		target_rotation = 0.0
-		target_skew = player_body.velocity.y / max_speed * max_tilt_angle
-	
-	# Плавно применяем поворот и наклон к спрайту
-	player_sprite.rotation = lerp(player_sprite.rotation, target_rotation, 10.0 * delta)
-	player_sprite.skew = lerp(player_sprite.skew, target_skew, 10.0 * delta)
-
-func apply_tilt_to_body(delta):
-	"""Резервный метод - применяем наклон к самому CharacterBody2D"""
+	"""Применяет наклон к спрайту игрока (используя общую систему)"""
 	if not player_body:
 		return
-		
-	var target_rotation: float = 0.0
 	
-	# Только поворот для основного тела (skew не поддерживается)
-	if abs(player_body.velocity.x) > abs(player_body.velocity.y):
-		target_rotation = player_body.velocity.x / max_speed * max_tilt_angle
+	if player_sprite:
+		# Используем расширенную версию с поддержкой skew
+		CommonMovementSystem.apply_player_tilt_to_sprite(player_sprite, player_body.velocity, movement_params, delta)
 	else:
-		target_rotation = player_body.velocity.y / max_speed * max_tilt_angle * 0.5
-	
-	# Плавно применяем поворот
-	player_body.rotation = lerp(player_body.rotation, target_rotation, 10.0 * delta)
+		# Если спрайт не найден, применяем наклон к самому CharacterBody2D
+		CommonMovementSystem.apply_tilt_to_body(player_body, player_body.velocity, movement_params, delta)
+
+func apply_tilt_to_body(delta):
+	"""Резервный метод - применяем наклон к самому CharacterBody2D (теперь использует общую систему)"""
+	if player_body:
+		CommonMovementSystem.apply_tilt_to_body(player_body, player_body.velocity, movement_params, delta)
 
 # === СИСТЕМА ДОДЖА ===
 
-func update_dodge_timer(delta):
-	"""Обновляет таймер перезарядки доджа"""
-	if dodge_timer > 0:
-		dodge_timer -= delta
-		if dodge_timer <= 0:
-			is_dodging = false
-
 func perform_dodge():
-	"""Выполняет додж в направлении движения"""
+	"""Выполняет додж в направлении движения (используя общую систему)"""
 	if not player_body:
 		return
-		
-	# Проверяем, можем ли мы выполнить додж
-	if dodge_timer > 0:
-		return  # Додж на перезарядке
 	
-	# Проверяем, нажимает ли игрок клавиши движения
-	if input_vector.length() == 0:
-		return  # Игрок не нажимает клавиши движения
+	# Проверяем возможность доджа через общую систему
+	if not CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector):
+		return
 	
-	# Выполняем додж в направлении ввода
-	dodge_direction = input_vector.normalized()
-	player_body.velocity += dodge_direction * dodge_force
+	# Выполняем додж через общую систему
+	player_body.velocity = CommonMovementSystem.perform_dodge_on_velocity(
+		player_body.velocity, input_vector, dodge_force
+	)
 	
 	# Запускаем перезарядку
 	dodge_timer = dodge_cooldown
@@ -188,8 +162,8 @@ func perform_dodge():
 # === УТИЛИТАРНЫЕ МЕТОДЫ ===
 
 func can_dodge() -> bool:
-	"""Проверяет, может ли игрок выполнить додж"""
-	return dodge_timer <= 0 and input_vector.length() > 0
+	"""Проверяет, может ли игрок выполнить додж (используя общую систему)"""
+	return CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector)
 
 func is_dodge_on_cooldown() -> bool:
 	"""Проверяет, находится ли додж на перезарядке"""
@@ -206,9 +180,9 @@ func get_dodge_cooldown_progress() -> float:
 	return get_dodge_cooldown_remaining() / dodge_cooldown
 
 func get_current_speed() -> float:
-	"""Возвращает текущую скорость игрока"""
+	"""Возвращает текущую скорость игрока (используя общую систему)"""
 	if player_body:
-		return player_body.velocity.length()
+		return CommonMovementSystem.get_speed_from_velocity(player_body.velocity)
 	return 0.0
 
 func get_player_velocity() -> Vector2:
@@ -222,8 +196,8 @@ func get_input_direction() -> Vector2:
 	return input_vector
 
 func is_moving() -> bool:
-	"""Проверяет, движется ли игрок"""
-	return input_vector.length() > 0
+	"""Проверяет, движется ли игрок (используя общую систему)"""
+	return CommonMovementSystem.is_moving_from_input(input_vector)
 
 func cleanup():
 	"""Очистка ресурсов"""
