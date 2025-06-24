@@ -44,7 +44,9 @@ func update_smoke_system(delta):
 		
 	# Получаем скорость целевого узла
 	var current_speed = 0.0
-	if target_node.has_method("get_velocity"):
+	if target_node.has_method("get_player_velocity"):
+		current_speed = target_node.get_player_velocity().length()
+	elif target_node.has_method("get_velocity"):
 		current_speed = target_node.get_velocity().length()
 	elif "velocity" in target_node:
 		current_speed = target_node.velocity.length()
@@ -71,7 +73,9 @@ func spawn_smoke_particle():
 	
 	# Получаем скорость цели
 	var target_velocity = Vector2.ZERO
-	if target_node.has_method("get_velocity"):
+	if target_node.has_method("get_player_velocity"):
+		target_velocity = target_node.get_player_velocity()
+	elif target_node.has_method("get_velocity"):
 		target_velocity = target_node.get_velocity()
 	elif "velocity" in target_node:
 		target_velocity = target_node.velocity
