@@ -6,7 +6,7 @@
 load_path = "res://.godot/imported/Player-torso 1.png-e6fbc349b1641de2fc48c2a98a79ce8c.ctex"
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_j4qrl"]
-size = Vector2(83, 182)
+size = Vector2(60.5, 128)
 
 [node name="MainScene" type="Node2D"]
 
@@ -14,9 +14,10 @@ size = Vector2(83, 182)
 script = ExtResource("2_06yma")
 
 [node name="Sprite2d" type="Sprite2D" parent="Player"]
-scale = Vector2(4.26744, 4.26744)
+position = Vector2(-26.375, 32.5087)
+scale = Vector2(3.0407, 3.0407)
 texture = SubResource("CompressedTexture2D_j4qrl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-position = Vector2(-9.5, 19)
+position = Vector2(-32.25, 47)
 shape = SubResource("RectangleShape2D_j4qrl")
