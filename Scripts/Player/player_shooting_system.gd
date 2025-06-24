@@ -18,7 +18,7 @@ var fire_timer: float = 0.0
 var can_shoot: bool = true
 
 # Загружаем класс лазерного снаряда
-const LaserProjectile = preload("res://Scripts/Player/laser_projectile.gd")
+const LaserProjectileScript = preload("res://Scripts/Player/laser_projectile.gd")
 
 func _ready():
 	# Подключаем обработку ввода
@@ -85,34 +85,21 @@ func attempt_shoot():
 func shoot_laser(direction: Vector2):
 	"""Создает и запускает лазерный снаряд"""
 	if not projectile_parent:
-		print("ОШИБКА: projectile_parent не найден!")
 		return
 	
 	# Вычисляем точку выстрела с учетом поворота игрока
 	var rotated_offset = muzzle_offset.rotated(direction.angle())
 	var shoot_position = player_body.global_position + rotated_offset
 	
-	print("Создаем лазер в позиции: ", shoot_position, " направление: ", direction)
-	print("Позиция игрока: ", player_body.global_position)
-	print("Смещение: ", rotated_offset)
-	
 	# Создаем лазерный снаряд используя статический метод, передавая ссылку на игрока
-	var laser = LaserProjectile.create_laser_projectile(shoot_position, direction, player_body, laser_speed, laser_damage)
-	
-	print("Лазер создан: ", laser)
-	print("Родитель для снарядов: ", projectile_parent)
-	print("Стрелок (игрок): ", player_body)
+	var laser = LaserProjectileScript.create_laser_projectile(shoot_position, direction, player_body, laser_speed, laser_damage)
 	
 	# Добавляем лазер в сцену отложенно
 	projectile_parent.add_child.call_deferred(laser)
 	
-	print("Лазер добавлен в сцену отложенно. Дочерних узлов у projectile_parent: ", projectile_parent.get_child_count())
-	
 	# Убираем эффект вспышки выстрела
 	# create_simple_muzzle_flash(shoot_position)
 	
-	print("Лазерный выстрел завершен!")
-
 # === УТИЛИТАРНЫЕ МЕТОДЫ ===
 
 func can_fire() -> bool:

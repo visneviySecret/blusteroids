@@ -25,7 +25,6 @@ func create_test_objects():
 		test_obj.position = positions[i]
 		add_child(test_obj)
 		
-		print("Создан тестовый объект: ", test_obj.name, " в позиции: ", positions[i])
 
 func _input(event):
 	# Дополнительные элементы управления для демо

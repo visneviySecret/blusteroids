@@ -55,11 +55,6 @@ func find_player_sprite():
 				player_sprite = child
 				break
 	
-	if not player_sprite:
-		print("PlayerMovementController: Спрайт игрока не найден")
-		for child in player_body.get_children():
-			print("- ", child.name, " (", child.get_class(), ")")
-
 func _input(event):
 	"""Обработка событий ввода"""
 	if not player_body:
@@ -189,8 +184,6 @@ func perform_dodge():
 	# Запускаем перезарядку
 	dodge_timer = dodge_cooldown
 	is_dodging = true
-	
-	print("Додж выполнен в направлении: ", dodge_direction)
 
 # === УТИЛИТАРНЫЕ МЕТОДЫ ===
 

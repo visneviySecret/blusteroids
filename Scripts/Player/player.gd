@@ -35,11 +35,6 @@ func find_player_sprite():
 				player_sprite = child
 				break
 	
-	if not player_sprite:
-		print("Player: Спрайт не найден")
-		for child in get_children():
-			print("- ", child.name, " (", child.get_class(), ")")
-
 func setup_smoke_system():
 	# Создаем и настраиваем систему дыма
 	smoke_system = SmokeSystem.new()
@@ -151,7 +146,7 @@ func set_laser_damage(new_damage: float):
 		shooting_system.set_laser_damage(new_damage)
 
 # Опциональные методы для обработки событий крюка (можно переопределить в наследниках)
-func on_hook_attached(position: Vector2):
+func on_hook_attached(_position_to_attach: Vector2):
 	"""Вызывается когда крюк прикрепляется к объекту"""
 	pass
 
@@ -159,7 +154,7 @@ func on_hook_detached():
 	"""Вызывается когда крюк отсоединяется"""
 	pass
 
-func on_hook_hit_target(body: Node2D):
+func on_hook_hit_target(_body: Node2D):
 	"""Вызывается когда крюк попадает в объект"""
 	pass
 

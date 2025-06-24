@@ -18,7 +18,6 @@ func setup_for_player(player: Node2D):
 func setup_grappling_hook():
 	"""Создает и настраивает систему крюк-кошки"""
 	if not player_reference:
-		print("Ошибка: player_reference не установлен!")
 		return
 	
 	# Создаем и настраиваем систему крюк-кошки
@@ -65,25 +64,15 @@ func launch_grappling_hook():
 	# Запускаем крюк в направлении курсора
 	var success = grappling_hook.launch_hook(player_position, mouse_position)
 	
-	if success:
-		print("Крюк запущен в направлении: ", mouse_position)
-	else:
-		print("Не удалось запустить крюк (возможно, уже активен)")
-
 # Обработчики сигналов крюк-кошки
 func _on_hook_attached(position: Vector2):
 	"""Вызывается когда крюк прикрепляется к объекту"""
-	print("Крюк прикреплен в позиции: ", position)
-	# Здесь можно добавить логику для механик зацепления
-	# Например: начать подтягивание к точке крепления
-	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_attached"):
 		player_reference.on_hook_attached(position)
 
 func _on_hook_detached():
 	"""Вызывается когда крюк отсоединяется"""
-	print("Крюк отсоединен")
 	# Здесь можно добавить логику завершения зацепления
 	
 	# Вызываем метод игрока, если он существует
@@ -92,7 +81,6 @@ func _on_hook_detached():
 
 func _on_hook_hit_target(body: Node2D):
 	"""Вызывается когда крюк попадает в объект"""
-	print("Крюк попал в объект: ", body.name)
 	# Здесь можно добавить специфичную логику для разных типов объектов
 	
 	# Пример будущей логики:
@@ -112,11 +100,11 @@ func start_swinging_mechanics():
 	if player_reference and player_reference.has_method("start_swinging_mechanics"):
 		player_reference.start_swinging_mechanics()
 
-func start_pulling_mechanics(target_body: Node2D):
+func start_pulling_mechanics(_target_body: Node2D):
 	"""Начинает механику подтягивания объектов"""
 	# Здесь будет логика подтягивания объектов
 	if player_reference and player_reference.has_method("start_pulling_mechanics"):
-		player_reference.start_pulling_mechanics(target_body)
+		player_reference.start_pulling_mechanics(_target_body)
 
 # Утилитарные методы
 func get_grappling_hook() -> GrapplingHook:

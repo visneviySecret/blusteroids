@@ -54,8 +54,6 @@ func take_damage(damage: float):
 	# Изменяем цвет в зависимости от здоровья
 	update_color()
 	
-	print("Цель получила урон: ", damage, ". Здоровье: ", current_health, "/", max_health)
-	
 	# Уничтожаем цель если здоровье закончилось
 	if current_health <= 0:
 		destroy_target()
@@ -79,7 +77,6 @@ func destroy_target():
 	# Создаем эффект уничтожения
 	create_destruction_effect()
 	
-	print("Цель уничтожена!")
 	queue_free()
 
 func create_destruction_effect():

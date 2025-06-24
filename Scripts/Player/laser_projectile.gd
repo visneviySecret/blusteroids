@@ -20,10 +20,8 @@ var collision_shape: CollisionShape2D
 
 func _ready():
 	if is_initialized:
-		print("LaserProjectile._ready() уже был вызван, пропускаем")
 		return
 		
-	print("LaserProjectile._ready() вызван")
 	setup_visuals()
 	setup_collision()
 	
@@ -65,8 +63,6 @@ func setup_collision():
 	collision_layer = 2  # Лазер находится на слое 2
 	collision_mask = 1 + 4  # Лазер сталкивается со слоями 1 (враги) и 3 (препятствия), но не с игроком
 	
-	print("Настроена коллизия лазера: layer=", collision_layer, " mask=", collision_mask)
-
 func initialize(start_position: Vector2, direction: Vector2, shooter_ref: Node2D = null):
 	"""Инициализирует лазер с начальной позицией, направлением и ссылкой на стрелка"""
 	global_position = start_position
@@ -87,7 +83,6 @@ func _physics_process(delta):
 		return
 		
 	# Движение лазера
-	var old_position = global_position
 	global_position += velocity * delta
 	
 	# Увеличиваем время жизни
@@ -101,10 +96,7 @@ func _on_body_entered(body):
 	"""Обработка столкновения с телом"""
 	# Игнорируем столкновение со стрелком
 	if body == shooter:
-		print("Лазер игнорирует столкновение со стрелком: ", body)
 		return
-	
-	print("Лазер столкнулся с телом: ", body)
 	
 	if body.has_method("take_damage"):
 		body.take_damage(damage)
@@ -119,10 +111,8 @@ func _on_area_entered(area):
 	"""Обработка столкновения с областью"""
 	# Игнорируем столкновение со стрелком (если он Area2D)
 	if area == shooter:
-		print("Лазер игнорирует столкновение с областью стрелка: ", area)
 		return
 	
-	print("Лазер столкнулся с областью: ", area)
 	
 	if area.has_method("take_damage"):
 		area.take_damage(damage)

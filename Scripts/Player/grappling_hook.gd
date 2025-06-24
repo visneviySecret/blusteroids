@@ -176,8 +176,6 @@ func _on_hook_collision(body: Node):
 	if body.has_method("on_grappled"):
 		body.on_grappled()
 	
-	print("Крюк прикрепился к: ", body.name)
-
 func _on_hook_area_collision(area: Area2D):
 	"""Обработчик коллизии крюка с областями"""
 	if current_state != HookState.FLYING:
@@ -194,8 +192,6 @@ func _on_hook_area_collision(area: Area2D):
 	# Отправляем сигналы
 	hook_attached.emit(hook_body.global_position)
 	hook_hit_target.emit(area)
-	
-	print("Крюк прикрепился к области: ", area.name)
 
 func retract_hook():
 	"""Начинает возврат крюка"""
@@ -209,10 +205,10 @@ func reset_hook():
 	hook_velocity = Vector2.ZERO
 	set_hook_visible(false)
 
-func set_hook_visible(visible: bool):
+func set_hook_visible(show_hook: bool):
 	"""Показывает/скрывает крюк"""
-	hook_body.visible = visible
-	if not visible:
+	hook_body.visible = show_hook
+	if not show_hook:
 		line_renderer.clear_points()
 
 func is_hook_active() -> bool:
@@ -228,7 +224,7 @@ func get_hook_state() -> HookState:
 	return current_state
 
 # Методы для будущих механик зацепления
-func can_attach_to(body: Node) -> bool:
+func can_attach_to(_body: Node) -> bool:
 	"""Проверяет, можно ли прикрепиться к объекту (для будущих механик)"""
 	# Здесь можно добавить логику проверки типов объектов
 	return true
@@ -239,7 +235,7 @@ func get_attachment_point(body: Node) -> Vector2:
 		return body.global_position
 	return Vector2.ZERO
 
-func apply_hook_force(force: Vector2):
+func apply_hook_force(_force: Vector2):
 	"""Применяет силу к прикрепленному объекту (для будущих механик)"""
 	# Здесь можно добавить логику применения силы к объектам
 	pass 
