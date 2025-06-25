@@ -23,6 +23,10 @@ const Layers = preload("res://Scripts/config/collision_layers.gd")
 @export var dodge_force: float = 600.0  # Чуть слабее игрока
 @export var dodge_cooldown: float = 1.0
 
+# Параметры инерционного движения (после спрыгивания игрока)
+@export var inertia_friction: float = 150.0  # Трение для замедления астероида
+@export var inertia_min_speed: float = 15.0  # Минимальная скорость для остановки астероида
+
 var current_health: float
 var asteroid_sprite: Sprite2D
 var collision_shape: CollisionShape2D
@@ -40,6 +44,13 @@ var asteroid_velocity: Vector2 = Vector2.ZERO
 var dodge_timer: float = 0.0
 var is_dodging: bool = false
 
+# Переменные инерционного движения
+var inertia_velocity: Vector2 = Vector2.ZERO  # Скорость движения по инерции
+var is_moving_by_inertia: bool = false  # Флаг движения по инерции
+
+# Параметры инерции для астероида
+var inertia_params: MovementSystem.InertiaParams
+
 # Параметры движения для общей системы
 var movement_params: MovementSystem.MovementParams
 
@@ -49,6 +60,11 @@ func _ready():
 	# Инициализируем параметры движения
 	movement_params = MovementSystem.MovementParams.new(
 		max_speed, acceleration, friction, max_tilt_angle, dodge_force, dodge_cooldown
+	)
+	
+	# Инициализируем параметры инерции
+	inertia_params = MovementSystem.InertiaParams.new(
+		inertia_friction, inertia_min_speed, 0.6, 0.5
 	)
 
 func setup_asteroid():
@@ -73,8 +89,12 @@ func setup_asteroid():
 func _physics_process(delta):
 	"""Обновляет движение астероида, если на нем едет игрок"""
 	if is_being_ridden and rider:
+		# Движение с игроком
 		update_movement(delta)
 		update_rider_position()
+	elif is_moving_by_inertia:
+		# Инерционное движение после спрыгивания игрока
+		update_inertia_movement(delta)
 
 func start_riding(player: Node2D):
 	"""Начинает езду игрока на астероиде"""
@@ -127,6 +147,10 @@ func stop_riding():
 	if not is_being_ridden:
 		return
 	
+	# Сохраняем текущую скорость движения для инерции
+	var current_velocity = asteroid_velocity
+	print("Сохраняем скорость астероида при спрыгивании игрока: ", current_velocity)
+	
 	# Восстанавливаем исходный z-index игрока
 	if rider and rider.has_method("set"):
 		rider.z_index = 20  # Устанавливаем высокий z-index после схода
@@ -138,6 +162,10 @@ func stop_riding():
 	freeze = true
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
 	asteroid_velocity = Vector2.ZERO
+	
+	# Устанавливаем инерционное движение
+	set_inertia_velocity(current_velocity)
+	print("Астероид будет двигаться по инерции со скоростью: ", inertia_velocity)
 
 func update_movement(delta):
 	"""Обновляет движение астероида (используя общую систему)"""
@@ -218,13 +246,32 @@ func can_dodge() -> bool:
 	"""Проверяет, может ли астероид выполнить додж (используя общую систему)"""
 	return MovementSystem.can_perform_dodge(dodge_timer, input_vector) and is_being_ridden
 
+func get_current_speed() -> float:
+	"""Возвращает текущую скорость астероида"""
+	if is_being_ridden:
+		return asteroid_velocity.length()
+	elif is_moving_by_inertia:
+		return inertia_velocity.length()
+	else:
+		return 0.0
+
 func get_asteroid_velocity() -> Vector2:
 	"""Возвращает текущую скорость астероида"""
-	return asteroid_velocity
+	if is_being_ridden:
+		return asteroid_velocity
+	elif is_moving_by_inertia:
+		return inertia_velocity
+	else:
+		return Vector2.ZERO
 
 func is_moving() -> bool:
 	"""Проверяет, движется ли астероид (используя общую систему)"""
-	return MovementSystem.is_moving_from_input(input_vector) and is_being_ridden
+	if is_being_ridden:
+		return MovementSystem.is_moving_from_input(input_vector)
+	elif is_moving_by_inertia:
+		return inertia_velocity.length() > inertia_min_speed
+	else:
+		return false
 
 func find_existing_components():
 	"""Находит существующие компоненты астероида в сцене"""
@@ -241,13 +288,26 @@ func can_be_grappled() -> bool:
 
 func on_grappled():
 	"""Вызывается когда к астероиду цепляется крюк"""
-	print("Крюк зацепился за астероид")
+	if is_being_ridden:
+		print("Крюк зацепился за астероид с игроком")
+	elif is_moving_by_inertia:
+		print("Крюк зацепился за движущийся по инерции астероид")
+	else:
+		print("Крюк зацепился за неподвижный астероид")
 	
 	# Добавляем визуальный эффект зацепления
 	if asteroid_sprite:
 		# Кратковременно подсвечиваем астероид
 		var original_modulate = asteroid_sprite.modulate
-		asteroid_sprite.modulate = Color.YELLOW  # Желтое свечение при зацеплении
+		var glow_color = Color.YELLOW  # Желтое свечение по умолчанию
+		
+		# Разные цвета для разных состояний
+		if is_being_ridden:
+			glow_color = Color.CYAN  # Голубое для астероида с игроком
+		elif is_moving_by_inertia:
+			glow_color = Color.ORANGE  # Оранжевое для движущегося по инерции
+		
+		asteroid_sprite.modulate = glow_color
 		
 		# Создаем таймер для возврата цвета
 		var timer = Timer.new()
@@ -335,4 +395,67 @@ func is_alive() -> bool:
 
 func get_health_ratio() -> float:
 	"""Возвращает отношение текущего здоровья к максимальному"""
-	return current_health / max_health 
+	return current_health / max_health
+
+func set_inertia_velocity(new_velocity: Vector2):
+	"""Устанавливает скорость инерционного движения астероида"""
+	var inertia_data = MovementSystem.set_inertia_from_velocity(new_velocity, inertia_min_speed)
+	inertia_velocity = inertia_data[0]
+	is_moving_by_inertia = inertia_data[1]
+	
+	# Разморозить астероид для инерционного движения
+	if is_moving_by_inertia:
+		freeze = false
+		freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
+
+func get_inertia_velocity() -> Vector2:
+	"""Возвращает текущую скорость инерционного движения"""
+	return inertia_velocity
+
+func is_moving_by_inertia_check() -> bool:
+	"""Проверяет, движется ли астероид по инерции"""
+	return MovementSystem.is_inertia_active(inertia_velocity, inertia_min_speed)
+
+func stop_inertia_movement():
+	"""Принудительно останавливает инерционное движение"""
+	inertia_velocity = Vector2.ZERO
+	is_moving_by_inertia = false
+	freeze = true
+	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
+	print("Инерционное движение астероида принудительно остановлено")
+
+func update_inertia_movement(delta):
+	"""Обновляет инерционное движение астероида после спрыгивания игрока"""
+	if not is_moving_by_inertia:
+		return
+	
+	# Обновляем инерционное движение через общую систему
+	var new_velocity = MovementSystem.update_inertia_movement(inertia_velocity, inertia_params, delta)
+	
+	if new_velocity == Vector2.ZERO:
+		# Движение остановилось
+		stop_inertia_movement()
+		return
+	
+	inertia_velocity = new_velocity
+	
+	# Применяем скорость к астероиду
+	var collision = move_and_collide(inertia_velocity * delta)
+	if collision:
+		# Обрабатываем столкновение через общую систему
+		var collision_normal = collision.get_normal()
+		var collision_result = MovementSystem.handle_inertia_collision(inertia_velocity, collision_normal, inertia_params)
+		
+		if collision_result == Vector2.ZERO:
+			# Слабый удар - останавливаемся
+			stop_inertia_movement()
+			print("Астероид остановился после столкновения")
+			return
+		else:
+			# Сильный удар - отскок
+			inertia_velocity = collision_result
+			print("Астероид отскочил от препятствия")
+	
+	# Применяем наклон к астероиду при движении
+	if asteroid_sprite:
+		MovementSystem.apply_tilt_to_sprite(asteroid_sprite, inertia_velocity, movement_params, delta) 

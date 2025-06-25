@@ -390,6 +390,15 @@ func update_attached_hook_position():
 		retract_hook()
 		return
 	
+	# Специальная проверка для астероидов - если они остановились по инерции
+	if attached_target.has_method("is_moving_by_inertia_check") and not attached_target.is_moving_by_inertia_check():
+		# Астероид остановился - теперь он статичный
+		if is_attached_to_moving_object:
+			print("Астероид остановился - теперь он статичный объект для зацепления")
+			is_attached_to_moving_object = false
+			# Пересчитываем смещение для статичного объекта
+			attachment_offset = Vector2.ZERO
+	
 	if is_attached_to_moving_object:
 		# Обновляем позицию крюка относительно движущегося объекта
 		hook_body.global_position = attached_target.global_position + attachment_offset
@@ -408,6 +417,11 @@ func is_moving_object(object: Node) -> bool:
 	if object.has_method("is_alive") and not object.is_alive():
 		# Это обломки корабля - считаем их статичными для притягивания
 		return false
+	
+	# Специальная проверка для астероидов, движущихся по инерции
+	if object.has_method("is_moving_by_inertia_check") and object.is_moving_by_inertia_check():
+		print("Обнаружен астероид, движущийся по инерции")
+		return true
 	
 	# Проверяем по типу объекта
 	if object is CharacterBody2D or object is RigidBody2D:

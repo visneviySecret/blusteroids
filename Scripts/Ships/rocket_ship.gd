@@ -26,6 +26,7 @@ const DestroyedTexture = preload("res://Assets/Images/Rocket/Rocket-ship-destroy
 @export var max_tilt_angle: float = 0.2
 @export var wreckage_lifetime: float = 30.0  # Время жизни обломков в секундах
 @export var rotation_speed: float = 5.0  # Скорость поворота корабля
+@export var wreckage_friction: float = 200.0  # Трение для замедления обломков
 
 # Параметры атаки
 @export var laser_damage: float = 15.0
@@ -52,6 +53,13 @@ var can_fire: bool = true
 # Переменные движения
 var target_velocity: Vector2 = Vector2.ZERO
 
+# Переменные для обломков
+var wreckage_velocity: Vector2 = Vector2.ZERO  # Скорость движения обломков
+var is_wreckage_moving: bool = false  # Флаг движения обломков
+
+# Параметры инерции для обломков
+var wreckage_inertia_params: MovementSystem.InertiaParams
+
 # Настройки коллизий (переопределяются в наследниках)
 var ship_collision_layer: int = Layers.ENEMIES
 var ship_collision_mask: int = 0
@@ -66,6 +74,9 @@ var loot_collision_mask: int = Layers.PLAYER        # Маска для обна
 var wreckage_collision_layer: int = Layers.WRECKAGE # Слой для обломков, с которыми могут взаимодействовать пули
 var wreckage_collision_mask: int = 0                # Обломки ни с чем не сталкиваются активно
 
+# Параметры движения обломков
+@export var wreckage_min_speed: float = 10.0  # Минимальная скорость для остановки обломков
+
 func _ready():
 	current_health = max_health
 	setup_ship()
@@ -75,6 +86,11 @@ func _ready():
 	# Инициализируем параметры движения
 	movement_params = MovementSystem.MovementParams.new(
 		max_speed, acceleration, friction, max_tilt_angle, 0.0, 0.0
+	)
+	
+	# Инициализируем параметры инерции для обломков
+	wreckage_inertia_params = MovementSystem.InertiaParams.new(
+		wreckage_friction, wreckage_min_speed, 0.6, 0.5
 	)
 
 func setup_ship():
@@ -121,7 +137,14 @@ func get_projectile_layer_name() -> String:
 
 func _physics_process(delta):
 	update_fire_timer(delta)
-	update_movement(delta)
+	
+	if is_alive():
+		# Обычное движение живого корабля
+		update_movement(delta)
+	else:
+		# Движение обломков по инерции
+		update_wreckage_movement(delta)
+	
 	move_and_slide()
 
 func update_fire_timer(delta):
@@ -233,6 +256,10 @@ func show_damage_effect():
 
 func destroy_ship():
 	"""Уничтожает корабль"""
+	# Сохраняем текущую скорость движения корабля для обломков
+	var current_velocity = velocity
+	print("Сохраняем скорость корабля при уничтожении: ", current_velocity)
+	
 	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
 	ship_destroyed.emit()
 	print("Корабль уничтожен - испущен сигнал ship_destroyed")
@@ -247,6 +274,10 @@ func destroy_ship():
 	
 	# Меняем текстуру на поврежденную
 	change_to_destroyed_texture()
+	
+	# Устанавливаем скорость движения обломков
+	set_wreckage_velocity(current_velocity)
+	print("Обломки будут двигаться со скоростью: ", wreckage_velocity)
 	
 	# Отключаем функциональность корабля
 	disable_ship_functionality()
@@ -271,22 +302,22 @@ func change_to_destroyed_texture():
 
 func disable_ship_functionality():
 	"""Отключает всю функциональность уничтоженного корабля"""
-	# Отключаем физику движения
-	set_physics_process(false)
+	# НЕ отключаем физику движения для обломков - они должны продолжать двигаться
+	# set_physics_process(false)  # Закомментировано
 	
 	# Настраиваем коллизии для обломков - они могут взаимодействовать с пулями
 	collision_layer = wreckage_collision_layer
 	collision_mask = wreckage_collision_mask
 	
-	# Обнуляем скорость
-	velocity = Vector2.ZERO
-	target_velocity = Vector2.ZERO
+	# НЕ обнуляем скорость - обломки должны сохранить инерцию
+	# velocity = Vector2.ZERO  # Закомментировано
+	target_velocity = Vector2.ZERO  # Только целевая скорость
 	
 	# Отключаем возможность стрельбы
 	can_fire = false
 	
-	# Останавливаем движение
-	set_process(false)
+	# НЕ останавливаем движение - обломки должны двигаться
+	# set_process(false)  # Закомментировано
 	
 	# Создаем область для лута отложенно
 	setup_loot_area.call_deferred()
@@ -534,4 +565,72 @@ func show_grappling_effect():
 		timer.queue_free()
 	)
 	add_child(timer)
-	timer.start() 
+	timer.start()
+
+func update_wreckage_movement(delta):
+	"""Обновляет движение обломков по инерции"""
+	if not is_wreckage_moving:
+		return
+	
+	# Обновляем инерционное движение через общую систему
+	var new_velocity = MovementSystem.update_inertia_movement(wreckage_velocity, wreckage_inertia_params, delta)
+	
+	if new_velocity == Vector2.ZERO:
+		# Движение остановилось
+		wreckage_velocity = Vector2.ZERO
+		velocity = Vector2.ZERO
+		is_wreckage_moving = false
+		print("Обломки корабля остановились")
+		return
+	
+	wreckage_velocity = new_velocity
+	velocity = wreckage_velocity
+	
+	# Поворачиваем обломки по направлению движения через общую систему
+	rotation = MovementSystem.apply_inertia_rotation(
+		rotation, wreckage_velocity, rotation_speed, wreckage_inertia_params, delta
+	)
+
+func set_wreckage_velocity(new_velocity: Vector2):
+	"""Устанавливает скорость движения обломков"""
+	var inertia_data = MovementSystem.set_inertia_from_velocity(new_velocity, wreckage_min_speed)
+	wreckage_velocity = inertia_data[0]
+	is_wreckage_moving = inertia_data[1]
+
+func get_wreckage_velocity() -> Vector2:
+	"""Возвращает текущую скорость обломков"""
+	return wreckage_velocity
+
+func is_wreckage_still_moving() -> bool:
+	"""Проверяет, движутся ли еще обломки"""
+	return MovementSystem.is_inertia_active(wreckage_velocity, wreckage_min_speed)
+
+func set_loot_collision_layers(layer: int, mask: int):
+	"""Настраивает слои коллизий для лута"""
+	loot_collision_layer = layer
+	loot_collision_mask = mask
+
+func update_wreckage_moving(moving: bool):
+	"""Устанавливает флаг движения обломков"""
+	is_wreckage_moving = moving
+
+func update_wreckage_velocity_and_friction(new_velocity: Vector2, new_friction: float):
+	"""Устанавливает скорость и трение для замедления обломков"""
+	wreckage_velocity = new_velocity
+	wreckage_friction = max(0.0, new_friction)
+
+func update_wreckage_moving_and_velocity(moving: bool, new_velocity: Vector2):
+	"""Устанавливает флаг движения обломков и скорость"""
+	is_wreckage_moving = moving
+	wreckage_velocity = new_velocity
+
+func update_wreckage_moving_and_friction(moving: bool, new_friction: float):
+	"""Устанавливает флаг движения обломков и трение для замедления"""
+	is_wreckage_moving = moving
+	wreckage_friction = max(0.0, new_friction)
+
+func update_wreckage_moving_and_velocity_and_friction(moving: bool, new_velocity: Vector2, new_friction: float):
+	"""Устанавливает флаг движения обломков, скорость и трение для замедления"""
+	is_wreckage_moving = moving
+	wreckage_velocity = new_velocity
+	wreckage_friction = max(0.0, new_friction) 

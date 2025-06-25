@@ -3,6 +3,19 @@ class_name CommonMovementSystem
 
 # Общая система движения для игрока и астероида
 
+# Структура для параметров инерционного движения
+class InertiaParams:
+	var friction: float
+	var min_speed: float
+	var bounce_factor: float  # Коэффициент отскока при столкновениях
+	var rotation_speed_factor: float  # Множитель скорости поворота для инерции
+	
+	func _init(frict: float, min_spd: float, bounce: float = 0.6, rot_factor: float = 0.5):
+		friction = frict
+		min_speed = min_spd
+		bounce_factor = bounce
+		rotation_speed_factor = rot_factor
+
 # Структура для параметров движения
 class MovementParams:
 	var max_speed: float
@@ -137,4 +150,50 @@ static func is_moving_from_input(input_vector: Vector2) -> bool:
 # Методы для работы с коллизиями
 static func handle_collision_stop(_velocity: Vector2) -> Vector2:
 	"""Останавливает движение при столкновении"""
-	return Vector2.ZERO 
+	return Vector2.ZERO
+
+# ========== МЕТОДЫ ДЛЯ ИНЕРЦИОННОГО ДВИЖЕНИЯ ==========
+
+static func update_inertia_movement(inertia_velocity: Vector2, params: InertiaParams, delta: float) -> Vector2:
+	"""Обновляет инерционное движение с применением трения"""
+	if inertia_velocity.length() <= params.min_speed:
+		return Vector2.ZERO
+	
+	# Применяем трение для замедления
+	var friction_force = inertia_velocity.normalized() * params.friction * delta
+	var new_velocity = inertia_velocity - friction_force
+	
+	# Проверяем, не стала ли скорость слишком малой
+	if new_velocity.length() <= params.min_speed:
+		return Vector2.ZERO
+	
+	return new_velocity
+
+static func handle_inertia_collision(inertia_velocity: Vector2, collision_normal: Vector2, params: InertiaParams) -> Vector2:
+	"""Обрабатывает столкновение при инерционном движении"""
+	var impact_force = inertia_velocity.dot(-collision_normal)
+	
+	if impact_force > params.min_speed * 2:
+		# Сильный удар - отскок с потерей энергии
+		return inertia_velocity.bounce(collision_normal) * params.bounce_factor
+	else:
+		# Слабый удар - останавливаемся
+		return Vector2.ZERO
+
+static func apply_inertia_rotation(current_rotation: float, inertia_velocity: Vector2, rotation_speed: float, params: InertiaParams, delta: float) -> float:
+	"""Применяет поворот объекта по направлению инерционного движения"""
+	if inertia_velocity.length() <= params.min_speed:
+		return current_rotation
+	
+	var target_rotation = inertia_velocity.angle() + PI / 2
+	var adjusted_rotation_speed = rotation_speed * params.rotation_speed_factor
+	return lerp_angle(current_rotation, target_rotation, adjusted_rotation_speed * delta)
+
+static func is_inertia_active(inertia_velocity: Vector2, min_speed: float) -> bool:
+	"""Проверяет, активно ли инерционное движение"""
+	return inertia_velocity.length() > min_speed
+
+static func set_inertia_from_velocity(source_velocity: Vector2, min_speed: float) -> Array:
+	"""Устанавливает инерционное движение на основе исходной скорости. Возвращает [velocity, is_active]"""
+	var is_active = source_velocity.length() > min_speed
+	return [source_velocity, is_active] 
