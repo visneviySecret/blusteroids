@@ -1,6 +1,9 @@
 extends RigidBody2D
 class_name Asteroid
 
+# Сигналы
+signal destroyed  # Испускается при уничтожении астероида
+
 # Импорт общей системы движения
 const MovementSystem = preload("../utils/common_movement_system.gd")
 
@@ -238,8 +241,25 @@ func can_be_grappled() -> bool:
 
 func on_grappled():
 	"""Вызывается когда к астероиду цепляется крюк"""
-	# Можно добавить визуальные эффекты или звуки
-	pass
+	print("Крюк зацепился за астероид")
+	
+	# Добавляем визуальный эффект зацепления
+	if asteroid_sprite:
+		# Кратковременно подсвечиваем астероид
+		var original_modulate = asteroid_sprite.modulate
+		asteroid_sprite.modulate = Color.YELLOW  # Желтое свечение при зацеплении
+		
+		# Создаем таймер для возврата цвета
+		var timer = Timer.new()
+		timer.wait_time = 0.3
+		timer.one_shot = true
+		timer.timeout.connect(func(): 
+			if asteroid_sprite:
+				asteroid_sprite.modulate = original_modulate
+			timer.queue_free()
+		)
+		add_child(timer)
+		timer.start()
 
 func take_damage(damage: float):
 	"""Получает урон от лазера"""
@@ -276,6 +296,10 @@ func show_damage_effect():
 
 func destroy_asteroid():
 	"""Уничтожает астероид"""
+	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
+	destroyed.emit()
+	print("Астероид уничтожен - испущен сигнал destroyed")
+	
 	# Создаем эффект уничтожения
 	create_destruction_effect()
 	

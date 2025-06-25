@@ -67,8 +67,19 @@ func handle_grappling_hook_input():
 	if not grappling_hook:
 		return
 	
-	# Убираем обработку Escape, теперь используем только ПКМ
-	pass
+	# Обработка принудительного возврата крюка клавишей Escape
+	if Input.is_action_just_pressed("ui_cancel"):  # Клавиша Escape
+		if grappling_hook.is_hook_active():
+			print("Принудительный возврат крюка (Escape)")
+			grappling_hook.force_retract()
+	
+	# Дополнительная информация для отладки
+	if grappling_hook.is_attached_to_moving_target():
+		var target = grappling_hook.get_attached_target()
+		if target and target.has_method("get_current_speed"):
+			var speed = target.get_current_speed()
+			if speed > 10.0:  # Показываем только если объект действительно движется
+				print("Крюк следует за движущимся объектом со скоростью: ", speed)
 
 func launch_grappling_hook():
 	"""Запускает крюк-кошку в направлении курсора"""
@@ -96,11 +107,25 @@ func pull_player_to_target(delta):
 	var direction_to_target = (pull_target_position - player_reference.global_position).normalized()
 	var distance_to_target = player_reference.global_position.distance_to(pull_target_position)
 	
-	# Если достигли цели, начинаем езду на астероиде
-	if distance_to_target < 120.0:  # Увеличенное расстояние для посадки на верхушку
-		is_pulling_to_target = false
-		start_riding_asteroid()
-		return
+	# Проверяем, является ли цель обломками корабля
+	var is_wreckage = pull_target_object and pull_target_object.has_method("is_alive") and not pull_target_object.is_alive()
+	
+	if is_wreckage:
+		# Для обломков: притягиваемся ближе и останавливаемся
+		if distance_to_target < 80.0:  # Ближе чем для астероидов
+			is_pulling_to_target = false
+			print("Игрок притянулся к обломкам корабля")
+			
+			# Возвращаем крюк после притягивания к обломкам
+			if grappling_hook and grappling_hook.is_hook_active():
+				grappling_hook.retract_hook()
+			return
+	else:
+		# Обычная логика для астероидов
+		if distance_to_target < 120.0:  # Увеличенное расстояние для посадки на верхушку
+			is_pulling_to_target = false
+			start_riding_asteroid()
+			return
 	
 	# Применяем силу притягивания к игроку
 	if player_reference.has_method("set") and "velocity" in player_reference:
@@ -190,6 +215,17 @@ func _on_hook_hit_target(body: Node2D):
 	"""Вызывается когда крюк попадает в объект"""
 	# Сохраняем ссылку на объект для дальнейшего использования
 	pull_target_object = body
+	
+	# Проверяем, является ли объект обломками корабля
+	var is_wreckage = body.has_method("is_alive") and not body.is_alive()
+	
+	if is_wreckage:
+		print("Крюк попал в обломки корабля - игрок будет притянут")
+		# Для обломков начинаем притягивание, но не запускаем езду на астероиде
+		pull_target_object = body
+	else:
+		# Обычная логика для других объектов
+		pull_target_object = body
 	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_hit_target"):

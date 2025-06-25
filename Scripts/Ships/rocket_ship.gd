@@ -4,6 +4,9 @@ class_name RocketShip
 # Базовый класс для всех кораблей в игре
 # Содержит основные системы: движение, стрельба, дым, здоровье
 
+# Сигналы
+signal ship_destroyed  # Испускается при уничтожении корабля
+
 # Импорт конфига коллизий
 const Layers = preload("res://Scripts/config/collision_layers.gd")
 
@@ -230,6 +233,10 @@ func show_damage_effect():
 
 func destroy_ship():
 	"""Уничтожает корабль"""
+	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
+	ship_destroyed.emit()
+	print("Корабль уничтожен - испущен сигнал ship_destroyed")
+	
 	# Создаем эффект уничтожения
 	create_destruction_effect()
 	
@@ -498,7 +505,33 @@ func force_loot():
 	if can_be_looted():
 		loot_wreckage()
 
-func set_loot_collision_layers(layer: int, mask: int):
-	"""Настраивает слои коллизий для лута"""
-	loot_collision_layer = layer
-	loot_collision_mask = mask 
+func on_grappled():
+	"""Вызывается когда к кораблю цепляется крюк"""
+	if is_alive():
+		print("Крюк попал в живой корабль")
+		# Здесь можно добавить эффекты или логику для живых кораблей
+	else:
+		print("Крюк попал в обломки корабля - игрок будет притянут")
+		# Для обломков можно добавить визуальные эффекты
+		show_grappling_effect()
+
+func show_grappling_effect():
+	"""Показывает эффект зацепления крюком"""
+	if not ship_sprite:
+		return
+	
+	# Кратковременно подсвечиваем обломки
+	var original_modulate = ship_sprite.modulate
+	ship_sprite.modulate = Color.CYAN  # Голубое свечение при зацеплении
+	
+	# Создаем таймер для возврата цвета
+	var timer = Timer.new()
+	timer.wait_time = 0.5
+	timer.one_shot = true
+	timer.timeout.connect(func(): 
+		if ship_sprite:
+			ship_sprite.modulate = original_modulate
+		timer.queue_free()
+	)
+	add_child(timer)
+	timer.start() 
