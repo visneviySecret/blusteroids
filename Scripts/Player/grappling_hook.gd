@@ -210,14 +210,9 @@ func _on_hook_collision(body: Node):
 	if is_attached_to_moving_object:
 		# Вычисляем смещение точки прикрепления относительно объекта
 		attachment_offset = hook_body.global_position - body.global_position
-		print("Крюк прикреплен к движущемуся объекту: ", body.name if body.has_method("get") else "объект")
 	else:
 		# Для статичных объектов сохраняем текущую позицию
 		attachment_offset = Vector2.ZERO
-		if is_wreckage:
-			print("Крюк прикреплен к обломкам корабля: ", body.name if body.has_method("get") else "обломки")
-		else:
-			print("Крюк прикреплен к статичному объекту: ", body.name if body.has_method("get") else "объект")
 	
 	# Отправляем сигналы
 	hook_attached.emit(hook_body.global_position)
@@ -232,20 +227,16 @@ func connect_to_destruction_signals(object: Node):
 	# Подключаемся к сигналу tree_exiting (вызывается при удалении узла)
 	if object.has_signal("tree_exiting") and not object.tree_exiting.is_connected(_on_attached_object_destroyed):
 		object.tree_exiting.connect(_on_attached_object_destroyed)
-		print("Подключились к сигналу tree_exiting объекта")
 	
 	# Подключаемся к кастомным сигналам уничтожения, если они есть
 	if object.has_signal("destroyed") and not object.destroyed.is_connected(_on_attached_object_destroyed):
 		object.destroyed.connect(_on_attached_object_destroyed)
-		print("Подключились к сигналу destroyed объекта")
 	
 	if object.has_signal("ship_destroyed") and not object.ship_destroyed.is_connected(_on_attached_object_destroyed):
 		object.ship_destroyed.connect(_on_attached_object_destroyed)
-		print("Подключились к сигналу ship_destroyed объекта")
 
 func _on_attached_object_destroyed():
 	"""Вызывается при уничтожении прикрепленного объекта"""
-	print("Получен сигнал уничтожения прикрепленного объекта - возвращаем крюк")
 	if current_state == HookState.ATTACHED:
 		retract_hook()
 
@@ -271,10 +262,8 @@ func _on_hook_area_collision(area: Area2D):
 	
 	if is_attached_to_moving_object:
 		attachment_offset = hook_body.global_position - area.global_position
-		print("Крюк прикреплен к движущейся области: ", area.name if area.has_method("get") else "область")
 	else:
 		attachment_offset = Vector2.ZERO
-		print("Крюк прикреплен к статичной области: ", area.name if area.has_method("get") else "область")
 	
 	# Отправляем сигналы
 	hook_attached.emit(hook_body.global_position)
@@ -303,16 +292,13 @@ func disconnect_destruction_signals():
 	# Отключаем сигнал tree_exiting
 	if attached_target.has_signal("tree_exiting") and attached_target.tree_exiting.is_connected(_on_attached_object_destroyed):
 		attached_target.tree_exiting.disconnect(_on_attached_object_destroyed)
-		print("Отключились от сигнала tree_exiting объекта")
 	
 	# Отключаем кастомные сигналы уничтожения
 	if attached_target.has_signal("destroyed") and attached_target.destroyed.is_connected(_on_attached_object_destroyed):
 		attached_target.destroyed.disconnect(_on_attached_object_destroyed)
-		print("Отключились от сигнала destroyed объекта")
 	
 	if attached_target.has_signal("ship_destroyed") and attached_target.ship_destroyed.is_connected(_on_attached_object_destroyed):
 		attached_target.ship_destroyed.disconnect(_on_attached_object_destroyed)
-		print("Отключились от сигнала ship_destroyed объекта")
 
 func reset_hook():
 	"""Сбрасывает крюк в исходное состояние"""
@@ -368,25 +354,21 @@ func update_attached_hook_position():
 	"""Обновляет позицию крюка, прикрепленного к объекту"""
 	if not attached_target or not is_instance_valid(attached_target):
 		# Объект был удален - отсоединяем крюк
-		print("Прикрепленный объект был удален - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Проверяем, жив ли объект (для любых объектов с методом is_alive)
 	if attached_target.has_method("is_alive") and not attached_target.is_alive():
-		print("Прикрепленный объект уничтожен - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Дополнительная проверка для объектов с методом is_destroyed
 	if attached_target.has_method("is_destroyed") and attached_target.is_destroyed():
-		print("Прикрепленный объект уничтожен (is_destroyed) - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Проверяем, не находится ли объект в процессе удаления
 	if attached_target.is_queued_for_deletion():
-		print("Прикрепленный объект готовится к удалению - возвращаем крюк")
 		retract_hook()
 		return
 	
@@ -394,7 +376,6 @@ func update_attached_hook_position():
 	if attached_target.has_method("is_moving_by_inertia_check") and not attached_target.is_moving_by_inertia_check():
 		# Астероид остановился - теперь он статичный
 		if is_attached_to_moving_object:
-			print("Астероид остановился - теперь он статичный объект для зацепления")
 			is_attached_to_moving_object = false
 			# Пересчитываем смещение для статичного объекта
 			attachment_offset = Vector2.ZERO
@@ -407,7 +388,6 @@ func update_attached_hook_position():
 		if player_reference:
 			var distance_to_player = player_reference.global_position.distance_to(hook_body.global_position)
 			if distance_to_player <= 50.0:  # Пороговое расстояние
-				print("Игрок притянулся к движущемуся объекту - возвращаем крюк")
 				retract_hook()
 				return
 
@@ -420,7 +400,6 @@ func is_moving_object(object: Node) -> bool:
 	
 	# Специальная проверка для астероидов, движущихся по инерции
 	if object.has_method("is_moving_by_inertia_check") and object.is_moving_by_inertia_check():
-		print("Обнаружен астероид, движущийся по инерции")
 		return true
 	
 	# Проверяем по типу объекта
@@ -469,7 +448,6 @@ func get_distance_to_attached_target() -> float:
 func force_retract():
 	"""Принудительно возвращает крюк (может быть вызван игроком)"""
 	if current_state == HookState.ATTACHED or current_state == HookState.FLYING:
-		print("Принудительный возврат крюка")
 		retract_hook()
 
 func set_auto_retract_distance(distance: float):
@@ -480,25 +458,21 @@ func set_auto_retract_distance(distance: float):
 func check_attached_target_validity():
 	"""Проверяет, валиден ли прикрепленный объект"""
 	if not attached_target or not is_instance_valid(attached_target):
-		print("Прикрепленный объект был удален - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Проверяем, жив ли объект (для любых объектов с методом is_alive)
 	if attached_target.has_method("is_alive") and not attached_target.is_alive():
-		print("Прикрепленный объект уничтожен - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Дополнительная проверка для объектов с методом is_destroyed
 	if attached_target.has_method("is_destroyed") and attached_target.is_destroyed():
-		print("Прикрепленный объект уничтожен (is_destroyed) - возвращаем крюк")
 		retract_hook()
 		return
 	
 	# Проверяем, не находится ли объект в процессе удаления
 	if attached_target.is_queued_for_deletion():
-		print("Прикрепленный объект готовится к удалению - возвращаем крюк")
 		retract_hook()
 		return
 	
@@ -507,6 +481,5 @@ func check_attached_target_validity():
 		if player_reference:
 			var distance_to_player = player_reference.global_position.distance_to(hook_body.global_position)
 			if distance_to_player <= 50.0:  # Пороговое расстояние
-				print("Игрок притянулся к движущемуся объекту - возвращаем крюк")
 				retract_hook()
 				return

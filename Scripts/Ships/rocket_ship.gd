@@ -253,16 +253,13 @@ func destroy_ship():
 	"""Уничтожает корабль"""
 	# Сохраняем текущую скорость движения корабля для обломков
 	var current_velocity = velocity
-	print("Сохраняем скорость корабля при уничтожении: ", current_velocity)
 	
 	# Активируем дополнительный выстрел
 	has_death_shot = true
 	death_shot_used = false
-	print("Активирован дополнительный выстрел после уничтожения")
 	
 	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
 	ship_destroyed.emit()
-	print("Корабль уничтожен - испущен сигнал ship_destroyed")
 	
 	# Создаем эффект уничтожения
 	create_destruction_effect()
@@ -277,7 +274,6 @@ func destroy_ship():
 	
 	# Устанавливаем скорость движения обломков
 	set_wreckage_velocity(current_velocity)
-	print("Обломки будут двигаться со скоростью: ", wreckage_velocity)
 	
 	# Отключаем функциональность корабля
 	disable_ship_functionality()
@@ -524,10 +520,9 @@ func force_loot():
 func on_grappled():
 	"""Вызывается когда к кораблю цепляется крюк"""
 	if is_alive():
-		print("Крюк попал в живой корабль")
 		# Здесь можно добавить эффекты или логику для живых кораблей
+		pass
 	else:
-		print("Крюк попал в обломки корабля - игрок будет притянут")
 		# Для обломков можно добавить визуальные эффекты
 		show_grappling_effect()
 
@@ -552,7 +547,6 @@ func update_wreckage_movement(delta):
 		wreckage_velocity = Vector2.ZERO
 		velocity = Vector2.ZERO
 		is_wreckage_moving = false
-		print("Обломки корабля остановились")
 		return
 	
 	wreckage_velocity = new_velocity
@@ -621,8 +615,6 @@ func perform_death_shot():
 	if not projectile_parent:
 		return
 	
-	print("Обломки корабля производят последний выстрел!")
-	
 	# Определяем направление выстрела (случайное или к игроку)
 	var shoot_direction = Vector2.RIGHT.rotated(randf() * TAU)  # Случайное направление
 	
@@ -643,7 +635,6 @@ func enable_death_shot(enabled: bool = true):
 	"""Включает или выключает возможность дополнительного выстрела"""
 	if is_alive():
 		has_death_shot = enabled
-		print("Дополнительный выстрел ", "включен" if enabled else "выключен")
 
 func is_death_shot_available() -> bool:
 	"""Проверяет, доступен ли дополнительный выстрел"""

@@ -157,7 +157,6 @@ func set_laser_damage(new_damage: float):
 
 func take_damage(damage: float):
 	"""Получает урон от врагов"""
-	print("Игрок получил урон: ", damage)
 	# Здесь можно добавить систему здоровья игрока
 	# Пока что просто выводим сообщение
 

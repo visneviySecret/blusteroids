@@ -70,16 +70,7 @@ func handle_grappling_hook_input():
 	# Обработка принудительного возврата крюка клавишей Escape
 	if Input.is_action_just_pressed("ui_cancel"):  # Клавиша Escape
 		if grappling_hook.is_hook_active():
-			print("Принудительный возврат крюка (Escape)")
 			grappling_hook.force_retract()
-	
-	# Дополнительная информация для отладки
-	if grappling_hook.is_attached_to_moving_target():
-		var target = grappling_hook.get_attached_target()
-		if target and target.has_method("get_current_speed"):
-			var speed = target.get_current_speed()
-			if speed > 10.0:  # Показываем только если объект действительно движется
-				print("Крюк следует за движущимся объектом со скоростью: ", speed)
 
 func launch_grappling_hook():
 	"""Запускает крюк-кошку в направлении курсора"""
@@ -114,7 +105,6 @@ func pull_player_to_target(delta):
 		# Для обломков: притягиваемся ближе и останавливаемся
 		if distance_to_target < 80.0:  # Ближе чем для астероидов
 			is_pulling_to_target = false
-			print("Игрок притянулся к обломкам корабля")
 			
 			# Возвращаем крюк после притягивания к обломкам
 			if grappling_hook and grappling_hook.is_hook_active():
@@ -213,19 +203,20 @@ func _on_hook_detached():
 
 func _on_hook_hit_target(body: Node2D):
 	"""Вызывается когда крюк попадает в объект"""
-	# Сохраняем ссылку на объект для дальнейшего использования
-	pull_target_object = body
-	
-	# Проверяем, является ли объект обломками корабля
+	# Проверяем, является ли цель обломками корабля
 	var is_wreckage = body.has_method("is_alive") and not body.is_alive()
 	
 	if is_wreckage:
-		print("Крюк попал в обломки корабля - игрок будет притянут")
-		# Для обломков начинаем притягивание, но не запускаем езду на астероиде
+		# Для обломков корабля - притягиваемся к ним
 		pull_target_object = body
+		
+		# Добавляем небольшое смещение для лучшего позиционирования
+		var wreckage_center = body.global_position
+		pull_target_position = wreckage_center + Vector2(0, -20)  # Немного выше центра
 	else:
-		# Обычная логика для других объектов
+		# Для обычных объектов - стандартная логика
 		pull_target_object = body
+		pull_target_position = body.global_position
 	
 	# Вызываем метод игрока, если он существует
 	if player_reference and player_reference.has_method("on_hook_hit_target"):

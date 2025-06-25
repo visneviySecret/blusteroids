@@ -150,7 +150,6 @@ func stop_riding():
 	
 	# Сохраняем текущую скорость движения для инерции
 	var current_velocity = asteroid_velocity
-	print("Сохраняем скорость астероида при спрыгивании игрока: ", current_velocity)
 	
 	# Восстанавливаем исходный z-index игрока
 	if rider and rider.has_method("set"):
@@ -166,7 +165,6 @@ func stop_riding():
 	
 	# Устанавливаем инерционное движение
 	set_inertia_velocity(current_velocity)
-	print("Астероид будет двигаться по инерции со скоростью: ", inertia_velocity)
 
 func update_movement(delta):
 	"""Обновляет движение астероида (используя общую систему)"""
@@ -289,13 +287,6 @@ func can_be_grappled() -> bool:
 
 func on_grappled():
 	"""Вызывается когда к астероиду цепляется крюк"""
-	if is_being_ridden:
-		print("Крюк зацепился за астероид с игроком")
-	elif is_moving_by_inertia:
-		print("Крюк зацепился за движущийся по инерции астероид")
-	else:
-		print("Крюк зацепился за неподвижный астероид")
-	
 	# Добавляем визуальный эффект зацепления через общую систему
 	if asteroid_sprite:
 		var glow_color = Color.YELLOW  # Желтое свечение по умолчанию
@@ -332,7 +323,6 @@ func destroy_asteroid():
 	"""Уничтожает астероид"""
 	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
 	destroyed.emit()
-	print("Астероид уничтожен - испущен сигнал destroyed")
 	
 	# Создаем эффект уничтожения
 	create_destruction_effect()
@@ -381,7 +371,6 @@ func stop_inertia_movement():
 	is_moving_by_inertia = false
 	freeze = true
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
-	print("Инерционное движение астероида принудительно остановлено")
 
 func update_inertia_movement(delta):
 	"""Обновляет инерционное движение астероида после спрыгивания игрока"""
@@ -408,12 +397,10 @@ func update_inertia_movement(delta):
 		if collision_result == Vector2.ZERO:
 			# Слабый удар - останавливаемся
 			stop_inertia_movement()
-			print("Астероид остановился после столкновения")
 			return
 		else:
 			# Сильный удар - отскок
 			inertia_velocity = collision_result
-			print("Астероид отскочил от препятствия")
 	
 	# Применяем наклон к астероиду при движении
 	if asteroid_sprite:
