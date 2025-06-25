@@ -32,6 +32,7 @@ var current_health: float
 var ship_sprite: Sprite2D
 var collision_shape: CollisionShape2D
 var is_looted: bool = false  # Параметр для отслеживания разграбления обломков
+var is_fading: bool = false  # Флаг для предотвращения повторного исчезновения
 
 # Системы корабля
 var smoke_system: Smoke
@@ -54,6 +55,10 @@ var laser_collision_mask: int = 1
 # Коллизии для лута (обломков)
 var loot_collision_layer: int = 16  # Слой для взаимодействия с игроком
 var loot_collision_mask: int = 4    # Маска для обнаружения игрока
+
+# Коллизии для разрушенных кораблей
+var wreckage_collision_layer: int = 32  # Слой для обломков, с которыми могут взаимодействовать пули
+var wreckage_collision_mask: int = 0    # Обломки ни с чем не сталкиваются активно
 
 func _ready():
 	current_health = max_health
@@ -184,6 +189,11 @@ func configure_laser_appearance(laser: Laser):
 
 func take_damage(damage: float):
 	"""Получает урон"""
+	# Если корабль уже мертв, повторное попадание заставляет его исчезнуть
+	if not is_alive():
+		fade_out_wreckage()
+		return
+	
 	current_health -= damage
 	current_health = max(0, current_health)
 	
@@ -254,9 +264,9 @@ func disable_ship_functionality():
 	# Отключаем физику движения
 	set_physics_process(false)
 	
-	# Отключаем основные коллизии
-	collision_layer = 0
-	collision_mask = 0
+	# Настраиваем коллизии для обломков - они могут взаимодействовать с пулями
+	collision_layer = wreckage_collision_layer
+	collision_mask = wreckage_collision_mask
 	
 	# Обнуляем скорость
 	velocity = Vector2.ZERO
@@ -311,7 +321,7 @@ func setup_loot_area():
 
 func _on_player_collision(body):
 	"""Обрабатывает столкновение игрока с обломками"""
-	if is_looted:
+	if is_looted or is_fading:
 		return
 		
 	# Проверяем, что это игрок
@@ -320,7 +330,7 @@ func _on_player_collision(body):
 
 func loot_wreckage():
 	"""Разграбляет обломки корабля"""
-	if is_looted:
+	if is_looted or is_fading:
 		return
 		
 	is_looted = true
@@ -364,12 +374,23 @@ func setup_wreckage_cleanup_timer():
 
 func fade_out_wreckage():
 	"""Плавно удаляет обломки корабля"""
+	# Предотвращаем повторное исчезновение
+	if is_fading:
+		return
+		
+	is_fading = true
+	
 	if not ship_sprite:
 		queue_free()
 		return
 	
+	# Отключаем область лута при принудительном исчезновении
+	var loot_area = get_node_or_null("LootArea")
+	if loot_area:
+		loot_area.queue_free()
+	
 	# Определяем время исчезновения в зависимости от того, разграблен ли корабль
-	var fade_time = 1.0 if is_looted else 2.0
+	var fade_time = 1.0 if is_looted else 1.5  # Немного быстрее при принудительном исчезновении
 	
 	# Создаем твин для плавного исчезновения
 	var tween = create_tween()
@@ -467,7 +488,7 @@ func is_wreckage_looted() -> bool:
 
 func can_be_looted() -> bool:
 	"""Проверяет, можно ли разграбить обломки"""
-	return not is_alive() and not is_looted
+	return not is_alive() and not is_looted and not is_fading
 
 func force_loot():
 	"""Принудительно разграбляет обломки"""

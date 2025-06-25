@@ -36,6 +36,10 @@ func _ready():
 	laser_collision_layer = 8  # Слой лазеров врагов
 	laser_collision_mask = 4   # Сталкивается с игроком
 	
+	# Настраиваем коллизии для обломков
+	wreckage_collision_layer = 32  # Слой обломков
+	wreckage_collision_mask = 0    # Обломки пассивны
+	
 	# Вызываем родительский _ready()
 	super._ready()
 	

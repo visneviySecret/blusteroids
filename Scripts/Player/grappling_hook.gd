@@ -40,7 +40,7 @@ func setup_hook_components():
 	hook_body = Area2D.new()
 	hook_body.name = "HookBody"
 	hook_body.collision_layer = 2  # Устанавливаем слой коллизии
-	hook_body.collision_mask = 1 + 4  # Маска для столкновений с объектами (слой 1) и препятствиями (слой 3)
+	hook_body.collision_mask = 1 + 4 + 32  # Маска для столкновений с объектами (слой 1), препятствиями (слой 3) и обломками (слой 32)
 	add_child(hook_body)
 	
 	# Создаем коллизию крюка
