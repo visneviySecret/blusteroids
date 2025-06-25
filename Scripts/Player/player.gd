@@ -2,6 +2,8 @@ extends CharacterBody2D
 
 # Импорт конфига коллизий
 const Layers = preload("res://Scripts/config/collision_layers.gd")
+# Импорт системы топлива
+const PlayerFuelSystem = preload("res://Scripts/Player/player_fuel_system.gd")
 
 # Основной скрипт игрока - координирует работу компонентов
 
@@ -15,6 +17,8 @@ var grappling_integration: PlayerGrapplingIntegration
 var movement_controller: PlayerMovementController
 # Система стрельбы
 var shooting_system: PlayerShootingSystem
+# Система топлива
+var fuel_system: PlayerFuelSystem
 
 func _ready():
 	# Добавляем игрока в группу для обнаружения врагами
@@ -31,6 +35,7 @@ func _ready():
 	setup_grappling_integration()
 	setup_movement_controller()
 	setup_shooting_system()
+	setup_fuel_system()
 
 func find_player_sprite():
 	# Пробуем найти спрайт разными способами
@@ -76,10 +81,25 @@ func setup_shooting_system():
 	# Настраиваем для этого игрока (отложенно)
 	shooting_system.setup_for_player.call_deferred(self)
 
+func setup_fuel_system():
+	# Создаем и настраиваем систему топлива
+	fuel_system = PlayerFuelSystem.new()
+	fuel_system.name = "FuelSystem"
+	add_child.call_deferred(fuel_system)
+	# Настраиваем для этого игрока (отложенно)
+	fuel_system.setup_for_player.call_deferred(self)
+	# Подключаем сигналы
+	fuel_system.fuel_depleted.connect(_on_fuel_depleted)
+	fuel_system.fuel_restored.connect(_on_fuel_restored)
+
 func _physics_process(delta):
 	# Обновляем движение через контроллер
 	if movement_controller:
 		movement_controller.update_movement(delta)
+	
+	# Обновляем систему топлива
+	if fuel_system:
+		fuel_system.update_fuel(delta)
 	
 	# Обработка ввода крюк-кошки (клавиатурные команды)
 	if grappling_integration:
@@ -122,7 +142,9 @@ func get_current_speed() -> float:
 
 func can_dodge() -> bool:
 	"""Проверяет, может ли игрок выполнить додж"""
-	if movement_controller:
+	if movement_controller and fuel_system:
+		return movement_controller.can_dodge() and fuel_system.can_dodge()
+	elif movement_controller:
 		return movement_controller.can_dodge()
 	return false
 
@@ -180,3 +202,36 @@ func start_swinging_mechanics():
 func start_pulling_mechanics(_target_body: Node2D):
 	"""Начинает механику подтягивания объектов"""
 	pass
+
+# Обработчики сигналов топлива
+func _on_fuel_depleted():
+	"""Вызывается когда топливо закончилось"""
+	print("Топливо закончилось! Скорость снижена.")
+
+func _on_fuel_restored():
+	"""Вызывается когда топливо восстановилось"""
+	print("Топливо восстановлено! Нормальная скорость.")
+
+# Утилитарные методы для топлива
+func get_current_fuel() -> float:
+	"""Возвращает текущее количество топлива"""
+	if fuel_system:
+		return fuel_system.get_current_fuel()
+	return 0.0
+
+func get_fuel_percentage() -> float:
+	"""Возвращает процент топлива (0.0 - 1.0)"""
+	if fuel_system:
+		return fuel_system.get_fuel_percentage()
+	return 0.0
+
+func is_fuel_depleted() -> bool:
+	"""Проверяет, закончилось ли топливо"""
+	if fuel_system:
+		return fuel_system.is_fuel_depleted()
+	return false
+
+func refill_fuel():
+	"""Полностью заправляет топливо"""
+	if fuel_system:
+		fuel_system.refill_fuel()

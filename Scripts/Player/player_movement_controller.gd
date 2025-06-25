@@ -1,6 +1,9 @@
 extends Node
 class_name PlayerMovementController
 
+# Импорт системы топлива
+const PlayerFuelSystem = preload("res://Scripts/Player/player_fuel_system.gd")
+
 # Контроллер движения и управления игроком
 
 # Параметры движения
@@ -16,6 +19,7 @@ class_name PlayerMovementController
 # Ссылки на компоненты игрока
 var player_body: CharacterBody2D
 var player_sprite: Sprite2D
+var fuel_system: PlayerFuelSystem
 
 # Переменные движения
 var input_vector: Vector2 = Vector2.ZERO
@@ -44,6 +48,9 @@ func setup_for_player(player: CharacterBody2D, sprite: Sprite2D = null):
 	# Если спрайт не передан, пытаемся найти его
 	if not player_sprite:
 		find_player_sprite()
+	
+	# Получаем ссылку на систему топлива (с задержкой, так как она создается позже)
+	call_deferred("find_fuel_system")
 
 func find_player_sprite():
 	"""Ищет спрайт игрока среди дочерних узлов"""
@@ -62,6 +69,11 @@ func find_player_sprite():
 				player_sprite = child
 				break
 	
+func find_fuel_system():
+	"""Ищет систему топлива среди дочерних узлов игрока"""
+	if player_body and player_body.has_node("FuelSystem"):
+		fuel_system = player_body.get_node("FuelSystem")
+
 func _input(event):
 	"""Обработка событий ввода"""
 	if not player_body:
@@ -114,9 +126,27 @@ func apply_movement(delta):
 	if not player_body:
 		return
 	
+	# Получаем множитель скорости от системы топлива
+	var speed_multiplier = 1.0
+	if fuel_system:
+		speed_multiplier = fuel_system.get_speed_multiplier()
+	
+	# Создаем модифицированные параметры движения с учетом топлива
+	var modified_params = movement_params
+	if speed_multiplier != 1.0:
+		# Создаем временную копию параметров с измененной скоростью
+		modified_params = CommonMovementSystem.MovementParams.new(
+			max_speed * speed_multiplier,
+			acceleration,
+			friction,
+			max_tilt_angle,
+			dodge_force,
+			dodge_cooldown
+		)
+	
 	# Используем общую систему для вычисления новой скорости
 	player_body.velocity = CommonMovementSystem.apply_movement_to_velocity(
-		player_body.velocity, input_vector, movement_params, delta
+		player_body.velocity, input_vector, modified_params, delta
 	)
 	
 	# Применение движения с использованием встроенного метода CharacterBody2D
@@ -150,6 +180,10 @@ func perform_dodge():
 	if not CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector):
 		return
 	
+	# Проверяем наличие топлива для доджа
+	if fuel_system and not fuel_system.consume_fuel_for_dodge():
+		return  # Не хватает топлива для доджа
+	
 	# Выполняем додж через общую систему
 	player_body.velocity = CommonMovementSystem.perform_dodge_on_velocity(
 		player_body.velocity, input_vector, dodge_force
@@ -163,7 +197,13 @@ func perform_dodge():
 
 func can_dodge() -> bool:
 	"""Проверяет, может ли игрок выполнить додж (используя общую систему)"""
-	return CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector)
+	var basic_can_dodge = CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector)
+	
+	# Также проверяем наличие топлива
+	if fuel_system:
+		return basic_can_dodge and fuel_system.can_dodge()
+	
+	return basic_can_dodge
 
 func is_dodge_on_cooldown() -> bool:
 	"""Проверяет, находится ли додж на перезарядке"""
