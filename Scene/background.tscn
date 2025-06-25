@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dv26fo5pgouk2"]
+[gd_scene load_steps=3 format=3 uid="uid://dv26fo5pgouk2"]
 
 [ext_resource type="Texture2D" uid="uid://bsgihrif0ss8g" path="res://Assets/Images/Background/Classic.png" id="1_3w1m4"]
+[ext_resource type="Material" uid="uid://ccxe2u78nn4vk" path="res://Assets/Materials/background_blur_material.tres" id="2_blur"]
 
 [node name="Background" type="ParallaxBackground"]
 
@@ -9,6 +10,7 @@ motion_scale = Vector2(0.25, 0.25)
 motion_mirroring = Vector2(2130, 2305)
 
 [node name="Sprite2D" type="Sprite2D" parent="ParallaxLayer"]
+material = ExtResource("2_blur")
 position = Vector2(-105, -578)
 scale = Vector2(1.38457, 1.38457)
 texture = ExtResource("1_3w1m4")
