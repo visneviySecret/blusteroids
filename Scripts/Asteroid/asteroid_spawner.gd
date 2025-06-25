@@ -17,12 +17,12 @@ signal asteroid_destroyed(asteroid: Asteroid)
 @export var spawn_distance: float = 300.0  # Расстояние за пределами экрана для спавна
 
 # Параметры размера астероидов
-@export var min_scale: float = 0.5  # Минимальный размер (50%)
-@export var max_scale: float = 2.0  # Максимальный размер (200%)
+@export var min_scale: float = 1.5  # Минимальный размер (50%)
+@export var max_scale: float = 4.0  # Максимальный размер (200%)
 
 # Параметры скорости астероидов
-@export var min_speed: float = 50.0   # Минимальная скорость
-@export var max_speed: float = 200.0  # Максимальная скорость
+@export var min_speed: float = 100.0   # Минимальная скорость
+@export var max_speed: float = 300.0  # Максимальная скорость
 
 # Параметры здоровья в зависимости от размера
 @export var base_health: float = 20.0

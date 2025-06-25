@@ -12,11 +12,9 @@ z_index = 10
 script = ExtResource("1_anp0i")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(1.34, 1.34)
 texture = ExtResource("1_pn0v1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(-1, 0)
 rotation = -1.5708
-scale = Vector2(1.335, 1.335)
 shape = SubResource("CapsuleShape2D_anp0i")
