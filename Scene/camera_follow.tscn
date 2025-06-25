@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bvxc8qy2n3k1f"]
+
+[ext_resource type="Script" path="res://Scripts/Camera/camera_follow.gd" id="1_0x0x0"]
+
+[node name="CameraFollow" type="Camera2D" groups=["camera"]]
+script = ExtResource("1_0x0x0")
+follow_speed = 5.0
+camera_offset = Vector2(0, 0)
+deadzone_size = Vector2(50, 50)
+max_distance = 200.0
+enable_prediction = true
+prediction_strength = 0.3
+smoothing_enabled = true 

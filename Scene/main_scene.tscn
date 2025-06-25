@@ -1,13 +1,20 @@
-[gd_scene load_steps=4 format=3 uid="uid://dm7xvmwbyolcb"]
+[gd_scene load_steps=6 format=3 uid="uid://dm7xvmwbyolcb"]
 
 [ext_resource type="PackedScene" uid="uid://ck44px42ecqy1" path="res://Scene/player.tscn" id="3_lttqn"]
 [ext_resource type="PackedScene" uid="uid://bevywlj1ombbj" path="res://Scene/enemy_ship_spawner.tscn" id="4_4kvl3"]
 [ext_resource type="PackedScene" uid="uid://ctom63geh8dft" path="res://Scene/asteroid_spawner.tscn" id="5_lttqn"]
+[ext_resource type="PackedScene" path="res://Scene/camera_follow.tscn" id="6_camera"]
+[ext_resource type="Script" uid="uid://c8qdusmb5fi77" path="res://Scripts/Camera/camera_manager.gd" id="7_camera_manager"]
 
 [node name="MainScene" type="Node2D"]
 
+[node name="CameraManager" type="Node" parent="."]
+script = ExtResource("7_camera_manager")
+
 [node name="Player" parent="." instance=ExtResource("3_lttqn")]
 position = Vector2(839, 510)
+
+[node name="CameraFollow" parent="." instance=ExtResource("6_camera")]
 
 [node name="EnemyShipSpawner" parent="." instance=ExtResource("4_4kvl3")]
 
