@@ -1,6 +1,9 @@
 extends Node2D
 class_name GrapplingHook
 
+# Импорт конфига коллизий
+const Layers = preload("res://Scripts/config/collision_layers.gd")
+
 # Сигналы для взаимодействия с игроком
 signal hook_attached(position: Vector2)
 signal hook_detached()
@@ -39,8 +42,11 @@ func setup_hook_components():
 	# Создаем основное тело крюка как Area2D для лучшего обнаружения коллизий
 	hook_body = Area2D.new()
 	hook_body.name = "HookBody"
-	hook_body.collision_layer = 2  # Устанавливаем слой коллизии
-	hook_body.collision_mask = 1 + 4 + 32  # Маска для столкновений с объектами (слой 1), препятствиями (слой 3) и обломками (слой 32)
+	
+	# Используем конфиг коллизий
+	hook_body.collision_layer = Layers.PresetConfigs.HookConfig.LAYER
+	hook_body.collision_mask = Layers.PresetConfigs.HookConfig.MASK
+	
 	add_child(hook_body)
 	
 	# Создаем коллизию крюка

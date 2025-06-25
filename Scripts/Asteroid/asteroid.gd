@@ -1,7 +1,11 @@
 extends RigidBody2D
+class_name Asteroid
 
 # Импорт общей системы движения
 const MovementSystem = preload("../utils/common_movement_system.gd")
+
+# Импорт конфига коллизий
+const Layers = preload("res://Scripts/config/collision_layers.gd")
 
 # Скрипт астероида с возможностью зацепления и уничтожения
 
@@ -55,9 +59,9 @@ func setup_asteroid():
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
 	freeze = true
 	
-	# Настраиваем слои коллизий
-	# Астероид находится на слое 3 (препятствия), чтобы крюк и лазеры могли с ним сталкиваться
-	collision_layer = 4  # Слой 3 (2^2 = 4)
+	# Настраиваем слои коллизий используя конфиг
+	# Астероид находится на слое препятствий
+	collision_layer = Layers.OBSTACLES
 	collision_mask = 0   # Астероид не должен сталкиваться с другими объектами сам
 	
 	# Находим существующие компоненты (они уже созданы в сцене)

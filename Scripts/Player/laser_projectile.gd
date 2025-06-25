@@ -1,6 +1,9 @@
 extends Area2D
 class_name LaserProjectile
 
+# Импорт конфига коллизий
+const Layers = preload("res://Scripts/config/collision_layers.gd")
+
 # Параметры лазерного снаряда
 @export var speed: float = 800.0  # Немного медленнее для лучшей видимости
 @export var lifetime: float = 5.0  # Дольше живет
@@ -58,11 +61,10 @@ func setup_collision():
 	collision_shape.position = Vector2(laser_length / 2, 0)
 	add_child(collision_shape)
 	
-	# Настраиваем collision layers для исключения столкновений с игроком
-	# Лазер находится на слое 2, игрок на слое 1
-	collision_layer = 2  # Лазер находится на слое 2
-	collision_mask = 1 + 4 + 32  # Лазер сталкивается со слоями 1 (враги), 3 (препятствия) и 32 (обломки)
-	
+	# Настраиваем коллизии лазера используя конфиг
+	collision_layer = Layers.PLAYER_LASERS
+	collision_mask = Layers.LaserMasks.PLAYER_LASERS
+
 func initialize(start_position: Vector2, direction: Vector2, shooter_ref: Node2D = null):
 	"""Инициализирует лазер с начальной позицией, направлением и ссылкой на стрелка"""
 	global_position = start_position

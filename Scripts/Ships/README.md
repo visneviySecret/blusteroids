@@ -23,11 +23,11 @@ extends RocketShip
 class_name MyCustomShip
 
 func _ready():
-    # Настраиваем коллизии
-    ship_collision_layer = 1
-    ship_collision_mask = 2
-    laser_collision_layer = 4
-    laser_collision_mask = 8
+    # Настраиваем коллизии используя конфиг
+    ship_collision_layer = Layers.ENEMIES
+    ship_collision_mask = Layers.EnemyMasks.BASIC
+    laser_collision_layer = Layers.ENEMY_LASERS
+    laser_collision_mask = Layers.LaserMasks.ENEMY_LASERS
 
     # Настраиваем время жизни обломков
     wreckage_lifetime = 45.0  # 45 секунд
@@ -36,7 +36,7 @@ func _ready():
     rotation_speed = 3.0  # Медленнее поворот
 
     # Настраиваем коллизии лута
-    set_loot_collision_layers(16, 4)  # Слой 16, маска игрока
+    set_loot_collision_layers(Layers.LOOT_AREA, Layers.PLAYER)
 
     # Вызываем родительский _ready()
     super._ready()

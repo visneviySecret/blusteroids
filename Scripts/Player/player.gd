@@ -1,5 +1,8 @@
 extends CharacterBody2D
 
+# Импорт конфига коллизий
+const Layers = preload("res://Scripts/config/collision_layers.gd")
+
 # Основной скрипт игрока - координирует работу компонентов
 
 # Ссылка на спрайт игрока
@@ -17,10 +20,9 @@ func _ready():
 	# Добавляем игрока в группу для обнаружения врагами
 	add_to_group("player")
 	
-	# Настраиваем слои коллизий
-	# Игрок находится на слое 3 (2^2 = 4), чтобы лазеры врагов могли с ним сталкиваться
-	collision_layer = 4  # Слой игрока
-	collision_mask = 1   # Сталкивается с врагами
+	# Настраиваем слои коллизий используя конфиг
+	collision_layer = Layers.PLAYER
+	collision_mask = Layers.PlayerMasks.BASIC
 	
 	# Получаем ссылку на спрайт
 	find_player_sprite()

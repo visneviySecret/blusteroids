@@ -4,6 +4,9 @@ class_name RocketShip
 # Базовый класс для всех кораблей в игре
 # Содержит основные системы: движение, стрельба, дым, здоровье
 
+# Импорт конфига коллизий
+const Layers = preload("res://Scripts/config/collision_layers.gd")
+
 # Импорт существующих систем
 const MovementSystem = preload("../utils/common_movement_system.gd")
 const Laser = preload("../Player/laser_projectile.gd")
@@ -47,18 +50,18 @@ var can_fire: bool = true
 var target_velocity: Vector2 = Vector2.ZERO
 
 # Настройки коллизий (переопределяются в наследниках)
-var ship_collision_layer: int = 1
+var ship_collision_layer: int = Layers.ENEMIES
 var ship_collision_mask: int = 0
-var laser_collision_layer: int = 2
-var laser_collision_mask: int = 1
+var laser_collision_layer: int = Layers.PLAYER_LASERS
+var laser_collision_mask: int = Layers.LaserMasks.PLAYER_LASERS
 
 # Коллизии для лута (обломков)
-var loot_collision_layer: int = 16  # Слой для взаимодействия с игроком
-var loot_collision_mask: int = 4    # Маска для обнаружения игрока
+var loot_collision_layer: int = Layers.LOOT_AREA    # Слой для взаимодействия с игроком
+var loot_collision_mask: int = Layers.PLAYER        # Маска для обнаружения игрока
 
 # Коллизии для разрушенных кораблей
-var wreckage_collision_layer: int = 32  # Слой для обломков, с которыми могут взаимодействовать пули
-var wreckage_collision_mask: int = 0    # Обломки ни с чем не сталкиваются активно
+var wreckage_collision_layer: int = Layers.WRECKAGE # Слой для обломков, с которыми могут взаимодействовать пули
+var wreckage_collision_mask: int = 0                # Обломки ни с чем не сталкиваются активно
 
 func _ready():
 	current_health = max_health

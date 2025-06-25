@@ -31,14 +31,14 @@ var orbit_angle: float = 0.0
 
 func _ready():
 	# Настраиваем параметры коллизий для врага
-	ship_collision_layer = 1  # Слой врагов
-	ship_collision_mask = 8   # Сталкивается с лазерами врагов
-	laser_collision_layer = 8  # Слой лазеров врагов
-	laser_collision_mask = 4   # Сталкивается с игроком
+	ship_collision_layer = Layers.ENEMIES         # Слой врагов
+	ship_collision_mask = Layers.EnemyMasks.BASIC # Базовая маска врагов
+	laser_collision_layer = Layers.ENEMY_LASERS   # Слой лазеров врагов
+	laser_collision_mask = Layers.LaserMasks.ENEMY_LASERS # Маска лазеров врагов
 	
 	# Настраиваем коллизии для обломков
-	wreckage_collision_layer = 32  # Слой обломков
-	wreckage_collision_mask = 0    # Обломки пассивны
+	wreckage_collision_layer = Layers.WRECKAGE    # Слой обломков
+	wreckage_collision_mask = 0                   # Обломки пассивны
 	
 	# Вызываем родительский _ready()
 	super._ready()
