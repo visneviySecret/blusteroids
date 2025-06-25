@@ -135,6 +135,6 @@ static func is_moving_from_input(input_vector: Vector2) -> bool:
 	return input_vector.length() > 0
 
 # Методы для работы с коллизиями
-static func handle_collision_stop(velocity: Vector2) -> Vector2:
+static func handle_collision_stop(_velocity: Vector2) -> Vector2:
 	"""Останавливает движение при столкновении"""
 	return Vector2.ZERO 
