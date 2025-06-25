@@ -622,12 +622,41 @@ func perform_death_shot():
 	# if player_reference:
 	#     shoot_direction = (player_reference.global_position - global_position).normalized()
 	
-	# Создаем лазерный снаряд
-	shoot_laser(shoot_direction)
+	# Создаем лазерный снаряд специальным методом для мертвых кораблей
+	shoot_death_laser(shoot_direction)
 	
 	# Визуальный эффект дополнительного выстрела
 	if ship_sprite:
 		VisualEffects.create_blinking_effect(ship_sprite, 2, 0.15) 
+
+func shoot_death_laser(direction: Vector2):
+	"""Создает и запускает лазерный снаряд для дополнительного выстрела после смерти"""
+	if not projectile_parent:
+		return
+	
+	# Вычисляем точку выстрела с учетом поворота корабля
+	var rotated_offset = muzzle_offset.rotated(rotation)
+	var shoot_position = global_position + rotated_offset
+	
+	# Создаем лазерный снаряд
+	var laser = Laser.create_laser_projectile(
+		shoot_position, direction, self, laser_speed, laser_damage
+	)
+	
+	# Настраиваем внешний вид лазера (может отличаться от обычного)
+	configure_death_laser_appearance(laser)
+	
+	# Настраиваем коллизии лазера
+	laser.collision_layer = laser_collision_layer
+	laser.collision_mask = laser_collision_mask
+	
+	# Добавляем лазер в сцену
+	projectile_parent.add_child.call_deferred(laser)
+
+func configure_death_laser_appearance(laser: Laser):
+	"""Настраивает внешний вид лазера дополнительного выстрела (переопределяется в наследниках)"""
+	# Базовая реализация - темно-красный лазер для обозначения выстрела мертвого корабля
+	laser.modulate = Color.DARK_RED
 
 # ========== МЕТОДЫ ДЛЯ ДОПОЛНИТЕЛЬНОГО ВЫСТРЕЛА ==========
 
