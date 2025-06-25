@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3l5dyvx5iu5x"
-path="res://.godot/imported/Rocket-ship.png-de861bc5066b518d0182fb6df00c5825.ctex"
+path="res://.godot/imported/Rocket-ship.svg-a61ed7082973fe7831972ab57f9cfd65.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Images/Rocket/Rocket-ship.png"
-dest_files=["res://.godot/imported/Rocket-ship.png-de861bc5066b518d0182fb6df00c5825.ctex"]
+source_file="res://Assets/Images/Rocket/Rocket-ship.svg"
+dest_files=["res://.godot/imported/Rocket-ship.svg-a61ed7082973fe7831972ab57f9cfd65.ctex"]
 
 [params]
 
@@ -32,3 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

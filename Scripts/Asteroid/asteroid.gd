@@ -6,6 +6,7 @@ signal destroyed  # Испускается при уничтожении аст�
 
 # Импорт общей системы движения
 const MovementSystem = preload("../utils/common_movement_system.gd")
+const VisualEffects = preload("../utils/visual_effects_system.gd")
 
 # Импорт конфига коллизий
 const Layers = preload("res://Scripts/config/collision_layers.gd")
@@ -295,10 +296,8 @@ func on_grappled():
 	else:
 		print("Крюк зацепился за неподвижный астероид")
 	
-	# Добавляем визуальный эффект зацепления
+	# Добавляем визуальный эффект зацепления через общую систему
 	if asteroid_sprite:
-		# Кратковременно подсвечиваем астероид
-		var original_modulate = asteroid_sprite.modulate
 		var glow_color = Color.YELLOW  # Желтое свечение по умолчанию
 		
 		# Разные цвета для разных состояний
@@ -307,19 +306,7 @@ func on_grappled():
 		elif is_moving_by_inertia:
 			glow_color = Color.ORANGE  # Оранжевое для движущегося по инерции
 		
-		asteroid_sprite.modulate = glow_color
-		
-		# Создаем таймер для возврата цвета
-		var timer = Timer.new()
-		timer.wait_time = 0.3
-		timer.one_shot = true
-		timer.timeout.connect(func(): 
-			if asteroid_sprite:
-				asteroid_sprite.modulate = original_modulate
-			timer.queue_free()
-		)
-		add_child(timer)
-		timer.start()
+		VisualEffects.show_grappling_effect(asteroid_sprite, glow_color, 0.3)
 
 func take_damage(damage: float):
 	"""Получает урон от лазера"""
@@ -338,21 +325,8 @@ func show_damage_effect():
 	if not asteroid_sprite:
 		return
 	
-	# Кратковременно меняем цвет на красный
-	var original_modulate = asteroid_sprite.modulate
-	asteroid_sprite.modulate = Color.RED
-	
-	# Создаем таймер для возврата цвета
-	var timer = Timer.new()
-	timer.wait_time = 0.2
-	timer.one_shot = true
-	timer.timeout.connect(func(): 
-		if asteroid_sprite:
-			asteroid_sprite.modulate = original_modulate
-		timer.queue_free()
-	)
-	add_child(timer)
-	timer.start()
+	# Используем общую систему визуальных эффектов
+	VisualEffects.show_damage_effect(asteroid_sprite, Color.RED, 0.2)
 
 func destroy_asteroid():
 	"""Уничтожает астероид"""
@@ -368,26 +342,11 @@ func destroy_asteroid():
 
 func create_destruction_effect():
 	"""Создает эффект уничтожения астероида"""
-	var particles = CPUParticles2D.new()
-	particles.emitting = true
-	particles.amount = 30
-	particles.lifetime = 1.5
-	particles.speed_scale = 2.0
-	particles.scale_amount_min = 0.5
-	particles.scale_amount_max = 1.5
-	particles.color = Color.GRAY
+	if not get_parent():
+		return
 	
-	# Добавляем частицы в родительскую сцену
-	get_parent().add_child(particles)
-	particles.global_position = global_position
-	
-	# Удаляем частицы через некоторое время
-	var timer = Timer.new()
-	timer.wait_time = 2.0
-	timer.one_shot = true
-	timer.timeout.connect(func(): particles.queue_free())
-	particles.add_child(timer)
-	timer.start()
+	# Используем общую систему визуальных эффектов
+	VisualEffects.create_destruction_particles(get_parent(), global_position, Color.GRAY, 30)
 
 func is_alive() -> bool:
 	"""Проверяет, жив ли астероид"""

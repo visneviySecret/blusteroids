@@ -14,9 +14,10 @@ const Layers = preload("res://Scripts/config/collision_layers.gd")
 const MovementSystem = preload("../utils/common_movement_system.gd")
 const Laser = preload("../Player/laser_projectile.gd")
 const Smoke = preload("../Effects/smoke_system.gd")
+const VisualEffects = preload("../utils/visual_effects_system.gd")
 
 # Предзагружаем текстуры
-const DestroyedTexture = preload("res://Assets/Images/Rocket/Rocket-ship-destroyed.png")
+const DestroyedTexture = preload("res://Assets/Images/Rocket/Rocket-ship-destroyed.svg")
 
 # Базовые параметры корабля
 @export var max_health: float = 30.0
@@ -76,6 +77,10 @@ var wreckage_collision_mask: int = 0                # Обломки ни с ч�
 
 # Параметры движения обломков
 @export var wreckage_min_speed: float = 10.0  # Минимальная скорость для остановки обломков
+
+# Система дополнительного выстрела после уничтожения
+var has_death_shot: bool = false  # Флаг наличия дополнительного выстрела
+var death_shot_used: bool = false  # Флаг использования дополнительного выстрела
 
 func _ready():
 	current_health = max_health
@@ -144,6 +149,9 @@ func _physics_process(delta):
 	else:
 		# Движение обломков по инерции
 		update_wreckage_movement(delta)
+		
+		# Проверяем возможность дополнительного выстрела
+		update_death_shot_logic(delta)
 	
 	move_and_slide()
 
@@ -238,27 +246,19 @@ func show_damage_effect():
 	if not ship_sprite:
 		return
 	
-	# Кратковременно меняем цвет на красный
-	var original_modulate = ship_sprite.modulate
-	ship_sprite.modulate = Color.RED
-	
-	# Создаем таймер для возврата цвета
-	var timer = Timer.new()
-	timer.wait_time = 0.2
-	timer.one_shot = true
-	timer.timeout.connect(func(): 
-		if ship_sprite:
-			ship_sprite.modulate = original_modulate
-		timer.queue_free()
-	)
-	add_child(timer)
-	timer.start()
+	# Используем общую систему визуальных эффектов
+	VisualEffects.show_damage_effect(ship_sprite, Color.RED, 0.2)
 
 func destroy_ship():
 	"""Уничтожает корабль"""
 	# Сохраняем текущую скорость движения корабля для обломков
 	var current_velocity = velocity
 	print("Сохраняем скорость корабля при уничтожении: ", current_velocity)
+	
+	# Активируем дополнительный выстрел
+	has_death_shot = true
+	death_shot_used = false
+	print("Активирован дополнительный выстрел после уничтожения")
 	
 	# Испускаем сигнал уничтожения ПЕРЕД началом процесса уничтожения
 	ship_destroyed.emit()
@@ -444,26 +444,11 @@ func on_ship_destroyed():
 
 func create_destruction_effect():
 	"""Создает эффект уничтожения корабля"""
-	var particles = CPUParticles2D.new()
-	particles.emitting = true
-	particles.amount = 40
-	particles.lifetime = 2.0
-	particles.speed_scale = 3.0
-	particles.scale_amount_min = 0.5
-	particles.scale_amount_max = 2.0
-	particles.color = get_destruction_color()
+	if not get_parent():
+		return
 	
-	# Добавляем частицы в родительскую сцену
-	get_parent().add_child(particles)
-	particles.global_position = global_position
-	
-	# Удаляем частицы через некоторое время
-	var timer = Timer.new()
-	timer.wait_time = 3.0
-	timer.one_shot = true
-	timer.timeout.connect(func(): particles.queue_free())
-	particles.add_child(timer)
-	timer.start()
+	# Используем общую систему визуальных эффектов
+	VisualEffects.create_destruction_particles(get_parent(), global_position, get_destruction_color(), 40)
 
 func get_destruction_color() -> Color:
 	"""Возвращает цвет эффекта уничтожения (переопределяется в наследниках)"""
@@ -551,21 +536,8 @@ func show_grappling_effect():
 	if not ship_sprite:
 		return
 	
-	# Кратковременно подсвечиваем обломки
-	var original_modulate = ship_sprite.modulate
-	ship_sprite.modulate = Color.CYAN  # Голубое свечение при зацеплении
-	
-	# Создаем таймер для возврата цвета
-	var timer = Timer.new()
-	timer.wait_time = 0.5
-	timer.one_shot = true
-	timer.timeout.connect(func(): 
-		if ship_sprite:
-			ship_sprite.modulate = original_modulate
-		timer.queue_free()
-	)
-	add_child(timer)
-	timer.start()
+	# Используем общую систему визуальных эффектов
+	VisualEffects.show_grappling_effect(ship_sprite, Color.CYAN, 0.5)
 
 func update_wreckage_movement(delta):
 	"""Обновляет движение обломков по инерции"""
@@ -633,4 +605,56 @@ func update_wreckage_moving_and_velocity_and_friction(moving: bool, new_velocity
 	"""Устанавливает флаг движения обломков, скорость и трение для замедления"""
 	is_wreckage_moving = moving
 	wreckage_velocity = new_velocity
-	wreckage_friction = max(0.0, new_friction) 
+	wreckage_friction = max(0.0, new_friction)
+
+func update_death_shot_logic(_delta):
+	"""Обновляет логику дополнительного выстрела после уничтожения"""
+	if not has_death_shot or death_shot_used:
+		return
+	
+	# Выполняем дополнительный выстрел через небольшую задержку после уничтожения
+	death_shot_used = true
+	perform_death_shot()
+
+func perform_death_shot():
+	"""Выполняет дополнительный выстрел после уничтожения"""
+	if not projectile_parent:
+		return
+	
+	print("Обломки корабля производят последний выстрел!")
+	
+	# Определяем направление выстрела (случайное или к игроку)
+	var shoot_direction = Vector2.RIGHT.rotated(randf() * TAU)  # Случайное направление
+	
+	# Альтернативно - стрелять в сторону игрока, если он есть
+	# if player_reference:
+	#     shoot_direction = (player_reference.global_position - global_position).normalized()
+	
+	# Создаем лазерный снаряд
+	shoot_laser(shoot_direction)
+	
+	# Визуальный эффект дополнительного выстрела
+	if ship_sprite:
+		VisualEffects.create_blinking_effect(ship_sprite, 2, 0.15) 
+
+# ========== МЕТОДЫ ДЛЯ ДОПОЛНИТЕЛЬНОГО ВЫСТРЕЛА ==========
+
+func enable_death_shot(enabled: bool = true):
+	"""Включает или выключает возможность дополнительного выстрела"""
+	if is_alive():
+		has_death_shot = enabled
+		print("Дополнительный выстрел ", "включен" if enabled else "выключен")
+
+func is_death_shot_available() -> bool:
+	"""Проверяет, доступен ли дополнительный выстрел"""
+	return has_death_shot and not death_shot_used
+
+func reset_death_shot():
+	"""Сбрасывает состояние дополнительного выстрела"""
+	has_death_shot = false
+	death_shot_used = false
+
+func force_death_shot():
+	"""Принудительно выполняет дополнительный выстрел (если доступен)"""
+	if is_death_shot_available() and not is_alive():
+		perform_death_shot() 
