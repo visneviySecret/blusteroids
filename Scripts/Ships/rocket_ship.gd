@@ -5,9 +5,9 @@ class_name RocketShip
 # Содержит основные системы: движение, стрельба, дым, здоровье
 
 # Импорт существующих систем
-const CommonMovementSystem = preload("../utils/common_movement_system.gd")
-const LaserProjectile = preload("../Player/laser_projectile.gd")
-const SmokeSystem = preload("../Effects/smoke_system.gd")
+const MovementSystem = preload("../utils/common_movement_system.gd")
+const Laser = preload("../Player/laser_projectile.gd")
+const Smoke = preload("../Effects/smoke_system.gd")
 
 # Предзагружаем текстуры
 const DestroyedTexture = preload("res://Assets/Images/Rocket/Rocket-ship-destroyed.png")
@@ -34,8 +34,8 @@ var collision_shape: CollisionShape2D
 var is_looted: bool = false  # Параметр для отслеживания разграбления обломков
 
 # Системы корабля
-var smoke_system: SmokeSystem
-var movement_params: CommonMovementSystem.MovementParams
+var smoke_system: Smoke
+var movement_params: MovementSystem.MovementParams
 var projectile_parent: Node2D
 
 # Переменные атаки
@@ -62,7 +62,7 @@ func _ready():
 	setup_projectile_parent()
 	
 	# Инициализируем параметры движения
-	movement_params = CommonMovementSystem.MovementParams.new(
+	movement_params = MovementSystem.MovementParams.new(
 		max_speed, acceleration, friction, max_tilt_angle, 0.0, 0.0
 	)
 
@@ -81,22 +81,12 @@ func find_existing_components():
 	for child in get_children():
 		if child is Sprite2D and not ship_sprite:
 			ship_sprite = child
-			print("Найден Sprite2D: ", child.name)
 		elif child is CollisionShape2D and not collision_shape:
 			collision_shape = child
-			print("Найден CollisionShape2D: ", child.name)
-	
-	# Если не нашли, выводим предупреждение
-	if not ship_sprite:
-		print("Предупреждение: Sprite2D не найден среди дочерних узлов корабля")
-		print("Дочерние узлы: ", get_children())
-	
-	if not collision_shape:
-		print("Предупреждение: CollisionShape2D не найден среди дочерних узлов корабля")
 
 func setup_smoke_system():
 	"""Создает и настраивает систему дыма"""
-	smoke_system = SmokeSystem.new()
+	smoke_system = Smoke.new()
 	smoke_system.smoke_spawn_rate = 0.08
 	smoke_system.min_speed_for_smoke = 30.0
 	get_parent().add_child.call_deferred(smoke_system)
@@ -134,7 +124,7 @@ func update_movement(delta):
 	"""Обновляет движение корабля (базовая реализация)"""
 	# Применяем движение через общую систему
 	var input_direction = target_velocity.normalized()
-	velocity = CommonMovementSystem.apply_movement_to_velocity(
+	velocity = MovementSystem.apply_movement_to_velocity(
 		velocity, input_direction, movement_params, delta
 	)
 	
@@ -145,7 +135,7 @@ func update_movement(delta):
 	
 	# Применяем наклон к спрайту (если нужен дополнительный эффект)
 	if ship_sprite:
-		CommonMovementSystem.apply_tilt_to_sprite(ship_sprite, velocity, movement_params, delta)
+		MovementSystem.apply_tilt_to_sprite(ship_sprite, velocity, movement_params, delta)
 
 func set_target_velocity(new_velocity: Vector2):
 	"""Устанавливает целевую скорость корабля"""
@@ -173,7 +163,7 @@ func shoot_laser(direction: Vector2):
 	var shoot_position = global_position + rotated_offset
 	
 	# Создаем лазерный снаряд
-	var laser = LaserProjectile.create_laser_projectile(
+	var laser = Laser.create_laser_projectile(
 		shoot_position, direction, self, laser_speed, laser_damage
 	)
 	
@@ -187,7 +177,7 @@ func shoot_laser(direction: Vector2):
 	# Добавляем лазер в сцену
 	projectile_parent.add_child.call_deferred(laser)
 
-func configure_laser_appearance(laser: LaserProjectile):
+func configure_laser_appearance(laser: Laser):
 	"""Настраивает внешний вид лазера (переопределяется в наследниках)"""
 	# Базовая реализация - красный лазер
 	laser.modulate = Color.RED
@@ -251,17 +241,13 @@ func change_to_destroyed_texture():
 		find_existing_components()
 	
 	if not ship_sprite:
-		print("Предупреждение: Не найден Sprite2D для смены текстуры на поврежденную")
 		return
 	
 	# Используем предзагруженную текстуру
 	if DestroyedTexture:
-		print("Меняем текстуру корабля на поврежденную")
 		ship_sprite.texture = DestroyedTexture
 		# Немного затемняем спрайт для эффекта
 		ship_sprite.modulate = Color(0.8, 0.8, 0.8, 1.0)
-	else:
-		print("Ошибка: Не удалось загрузить поврежденную текстуру Rocket-ship-destroyed.png")
 
 func disable_ship_functionality():
 	"""Отключает всю функциональность уничтоженного корабля"""
@@ -282,11 +268,11 @@ func disable_ship_functionality():
 	# Останавливаем движение
 	set_process(false)
 	
-	# Создаем область для лута
-	setup_loot_area()
+	# Создаем область для лута отложенно
+	setup_loot_area.call_deferred()
 	
 	# Устанавливаем таймер для удаления обломков
-	setup_wreckage_cleanup_timer()
+	setup_wreckage_cleanup_timer.call_deferred()
 
 func setup_loot_area():
 	"""Создает область для взаимодействия с обломками"""
@@ -491,26 +477,4 @@ func force_loot():
 func set_loot_collision_layers(layer: int, mask: int):
 	"""Настраивает слои коллизий для лута"""
 	loot_collision_layer = layer
-	loot_collision_mask = mask
-
-# Тестовые методы
-func test_destroy_texture():
-	"""Тестовый метод для проверки смены текстуры"""
-	print("=== ТЕСТ СМЕНЫ ТЕКСТУРЫ ===")
-	print("ship_sprite: ", ship_sprite)
-	if ship_sprite:
-		print("Текущая текстура: ", ship_sprite.texture)
-		print("Текущий modulate: ", ship_sprite.modulate)
-	
-	change_to_destroyed_texture()
-	
-	if ship_sprite:
-		print("Новая текстура: ", ship_sprite.texture)
-		print("Новый modulate: ", ship_sprite.modulate)
-	print("=== КОНЕЦ ТЕСТА ===")
-
-func force_destroy_for_test():
-	"""Принудительно уничтожает корабль для тестирования"""
-	print("Принудительное уничтожение корабля для теста")
-	current_health = 0
-	destroy_ship() 
+	loot_collision_mask = mask 

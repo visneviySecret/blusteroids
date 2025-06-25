@@ -138,7 +138,7 @@ func update_orbital_movement(delta):
 	var direction_to_orbit = (orbit_position - global_position).normalized()
 	set_target_velocity(direction_to_orbit * max_speed * 0.6)
 
-func update_pursuing_movement(delta):
+func update_pursuing_movement(_delta):
 	"""Обновляет движение преследования"""
 	if not player_reference:
 		return
@@ -146,7 +146,7 @@ func update_pursuing_movement(delta):
 	var direction_to_player = (player_reference.global_position - global_position).normalized()
 	set_target_velocity(direction_to_player * max_speed)
 
-func update_attacking_movement(delta):
+func update_attacking_movement(_delta):
 	"""Обновляет движение во время атаки"""
 	if not player_reference:
 		return
@@ -161,7 +161,7 @@ func update_attacking_movement(delta):
 	
 	set_target_velocity(circle_movement + approach_movement)
 
-func update_fleeing_movement(delta):
+func update_fleeing_movement(_delta):
 	"""Обновляет движение убегания"""
 	if not player_reference:
 		return
