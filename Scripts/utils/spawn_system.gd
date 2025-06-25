@@ -100,13 +100,21 @@ static func apply_distance_constraints(spawn_pos: Vector2, target_pos: Vector2, 
 static func get_simple_offscreen_position(viewport: Viewport, camera: Camera2D = null, margin: float = 100.0) -> Vector2:
 	"""Упрощенная версия для простого спавна за пределами экрана"""
 	var params = SpawnParams.new(margin)
-	return get_offscreen_spawn_position(viewport, null, params)
+	# Создаем фиктивный target_node из камеры для передачи позиции
+	var target_node: Node2D = null
+	if camera:
+		target_node = camera
+	return get_offscreen_spawn_position(viewport, target_node, params)
 
 static func get_spawn_direction_to_screen_center(spawn_pos: Vector2, viewport: Viewport, camera: Camera2D = null) -> Vector2:
 	"""Возвращает направление от позиции спавна к центру экрана"""
 	var screen_center = Vector2.ZERO
 	if camera:
 		screen_center = camera.global_position
+	else:
+		# Используем viewport для получения размера экрана если камера не задана
+		var screen_size = viewport.get_visible_rect().size
+		screen_center = screen_size / 2
 	
 	return (screen_center - spawn_pos).normalized()
 

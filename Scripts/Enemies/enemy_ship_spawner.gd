@@ -4,7 +4,7 @@ class_name EnemyShipSpawner
 # Система спавна врагов-кораблей
 
 # Импорт общей системы спавна
-const SpawnSystem = preload("../utils/spawn_system.gd")
+const SpawnUtils = preload("../utils/spawn_system.gd")
 
 # Параметры спавна
 @export var max_enemies: int = 3
@@ -21,7 +21,7 @@ var spawn_timer: float = 0.0
 var looted_ships_count: int = 0  # Счетчик разграбленных кораблей
 
 # Параметры спавна для общей системы
-var spawn_params: SpawnSystem.SpawnParams
+var spawn_params: SpawnUtils.SpawnParams
 
 # Загружаем сцену ракеты
 const RocketScene = preload("res://Scene/rocket.tscn")
@@ -29,7 +29,7 @@ const RocketScene = preload("res://Scene/rocket.tscn")
 func _ready():
 	find_player()
 	# Настраиваем параметры спавна для общей системы
-	spawn_params = SpawnSystem.SpawnParams.new(
+	spawn_params = SpawnUtils.SpawnParams.new(
 		screen_margin,           # screen_margin
 		spawn_distance_min,      # min_distance_from_target
 		spawn_distance_max,      # max_distance_from_target
@@ -74,7 +74,7 @@ func spawn_enemy():
 	enemy.name = "EnemyShip_" + str(spawned_enemies.size())
 	
 	# Позиционируем врага за пределами экрана используя общую систему
-	var spawn_position = SpawnSystem.get_offscreen_spawn_position(get_viewport(), player_reference, spawn_params)
+	var spawn_position = SpawnUtils.get_offscreen_spawn_position(get_viewport(), player_reference, spawn_params)
 	enemy.global_position = spawn_position
 	
 	# Устанавливаем центр орбиты

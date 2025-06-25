@@ -155,7 +155,7 @@ func set_laser_damage(new_damage: float):
 	if shooting_system:
 		shooting_system.set_laser_damage(new_damage)
 
-func take_damage(damage: float):
+func take_damage(_damage: float):
 	"""Получает урон от врагов"""
 	# Здесь можно добавить систему здоровья игрока
 	# Пока что просто выводим сообщение

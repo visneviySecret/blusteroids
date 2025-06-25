@@ -5,14 +5,14 @@ class_name AsteroidSpawner
 # Астероиды появляются за пределами экрана и летят через экран
 
 # Импорт общей системы спавна
-const SpawnSystem = preload("../utils/spawn_system.gd")
+const SpawnUtils = preload("../utils/spawn_system.gd")
 
 # Сигналы
 signal asteroid_spawned(asteroid: Asteroid)
 signal asteroid_destroyed(asteroid: Asteroid)
 
 # Параметры спавна
-@export var spawn_rate: float = 8.0  # Астероидов в секунду
+@export var spawn_rate: float = 6.0  # Астероидов в секунду
 @export var max_asteroids: int = 15  # Максимальное количество астероидов на экране
 @export var spawn_distance: float = 300.0  # Расстояние за пределами экрана для спавна
 
@@ -41,7 +41,7 @@ var camera: Camera2D
 var deletion_bounds: Rect2
 
 # Параметры спавна для общей системы
-var spawn_params: SpawnSystem.SpawnParams
+var spawn_params: SpawnUtils.SpawnParams
 
 func _ready():
 	setup_spawner()
@@ -61,7 +61,7 @@ func setup_spawner():
 	
 	# Создаем параметры спавна для общей системы
 	var max_asteroid_size = max_scale * 100.0  # Примерный размер астероида
-	spawn_params = SpawnSystem.SpawnParams.new(
+	spawn_params = SpawnUtils.SpawnParams.new(
 		spawn_distance,  # screen_margin
 		0.0,             # min_distance_from_target (не используется для астероидов)
 		0.0,             # max_distance_from_target (не используется для астероидов)  
@@ -105,7 +105,7 @@ func load_default_textures():
 
 func update_deletion_bounds():
 	"""Обновляет границы удаления астероидов"""
-	deletion_bounds = SpawnSystem.get_deletion_bounds(get_viewport(), camera, 2.0)
+	deletion_bounds = SpawnUtils.get_deletion_bounds(get_viewport(), camera, 2.0)
 
 func _process(delta):
 	update_spawner(delta)
@@ -137,11 +137,11 @@ func spawn_asteroid():
 	setup_asteroid_properties(asteroid)
 	
 	# Определяем позицию спавна используя общую систему
-	var spawn_position = SpawnSystem.get_offscreen_spawn_position(get_viewport(), null, spawn_params)
+	var spawn_position = SpawnUtils.get_offscreen_spawn_position(get_viewport(), null, spawn_params)
 	asteroid.global_position = spawn_position
 	
 	# Определяем направление движения используя общую систему
-	var target_position = SpawnSystem.get_random_screen_target(get_viewport(), camera)
+	var target_position = SpawnUtils.get_random_screen_target(get_viewport(), camera)
 	var direction = (target_position - spawn_position).normalized()
 	
 	# Устанавливаем скорость

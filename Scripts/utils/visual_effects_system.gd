@@ -63,7 +63,10 @@ static func create_blinking_effect(sprite: Sprite2D, blink_count: int = 3, blink
 		return
 	
 	var original_modulate = sprite.modulate
-	var blinks_remaining = blink_count * 2  # Умножаем на 2 для включения/выключения
+	
+	# Создаем объект-счетчик для корректной работы с лямбдой
+	var blink_counter = BlinkCounter.new()
+	blink_counter.remaining = blink_count * 2  # Умножаем на 2 для включения/выключения
 	
 	var blink_timer = Timer.new()
 	blink_timer.wait_time = blink_duration
@@ -71,9 +74,9 @@ static func create_blinking_effect(sprite: Sprite2D, blink_count: int = 3, blink
 		if sprite and is_instance_valid(sprite):
 			# Переключаем видимость
 			sprite.modulate.a = 1.0 if sprite.modulate.a < 0.5 else 0.3
-			blinks_remaining -= 1
+			blink_counter.remaining -= 1
 			
-			if blinks_remaining <= 0:
+			if blink_counter.remaining <= 0:
 				# Восстанавливаем оригинальный цвет и удаляем таймер
 				sprite.modulate = original_modulate
 				blink_timer.queue_free()
@@ -81,6 +84,10 @@ static func create_blinking_effect(sprite: Sprite2D, blink_count: int = 3, blink
 	
 	sprite.add_child(blink_timer)
 	blink_timer.start()
+
+# Вспомогательный класс для счетчика мерцаний
+class BlinkCounter:
+	var remaining: int = 0
 
 # ========== ЭФФЕКТЫ УНИЧТОЖЕНИЯ ==========
 
