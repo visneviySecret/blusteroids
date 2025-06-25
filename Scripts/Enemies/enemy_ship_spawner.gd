@@ -1,0 +1,203 @@
+extends Node2D
+class_name EnemyShipSpawner
+
+# Система спавна врагов-кораблей
+
+# Параметры спавна
+@export var max_enemies: int = 3
+@export var spawn_distance_min: float = 800.0  # Минимальное расстояние спавна от игрока
+@export var spawn_distance_max: float = 1200.0  # Максимальное расстояние спавна от игрока
+@export var spawn_interval: float = 10.0  # Интервал между спавнами
+@export var enemy_orbit_radius: float = 250.0  # Радиус орбиты для врагов
+@export var screen_margin: float = 100.0  # Отступ за пределы экрана
+
+# Ссылки
+var player_reference: Node2D = null
+var spawned_enemies: Array[EnemyShip] = []
+var spawn_timer: float = 0.0
+var looted_ships_count: int = 0  # Счетчик разграбленных кораблей
+
+# Загружаем сцену ракеты
+const RocketScene = preload("res://Scene/rocket.tscn")
+
+func _ready():
+	find_player()
+	# Спавним первого врага сразу
+	spawn_timer = spawn_interval
+
+func find_player():
+	"""Ищет игрока в сцене"""
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		player_reference = players[0]
+
+func _process(delta):
+	spawn_timer += delta
+	
+	# Убираем мертвых врагов из списка
+	cleanup_dead_enemies()
+	
+	# Спавним новых врагов если нужно
+	if spawn_timer >= spawn_interval and spawned_enemies.size() < max_enemies:
+		spawn_enemy()
+		spawn_timer = 0.0
+
+func cleanup_dead_enemies():
+	"""Убирает мертвых врагов из списка (они остаются как обломки на поле)"""
+	# Подсчитываем разграбленные корабли перед очисткой
+	for enemy in spawned_enemies:
+		if is_instance_valid(enemy) and enemy.has_method("is_wreckage_looted") and enemy.is_wreckage_looted():
+			looted_ships_count += 1
+	
+	spawned_enemies = spawned_enemies.filter(func(enemy): return is_instance_valid(enemy) and enemy.is_alive())
+
+func spawn_enemy():
+	"""Спавнит нового врага-корабля используя сцену rocket.tscn"""
+	if not player_reference:
+		return
+	
+	# Создаем врага из готовой сцены
+	var enemy = RocketScene.instantiate() as EnemyShip
+	enemy.name = "EnemyShip_" + str(spawned_enemies.size())
+	
+	# Позиционируем врага за пределами экрана
+	var spawn_position = get_offscreen_spawn_position()
+	enemy.global_position = spawn_position
+	
+	# Устанавливаем центр орбиты
+	var orbit_center = player_reference.global_position + Vector2(
+		randf_range(-200, 200),
+		randf_range(-200, 200)
+	)
+	enemy.set_orbit_center(orbit_center)
+	
+	# Добавляем в сцену
+	get_parent().add_child(enemy)
+	spawned_enemies.append(enemy)
+
+func get_offscreen_spawn_position() -> Vector2:
+	"""Вычисляет позицию спавна за пределами экрана"""
+	if not player_reference:
+		return Vector2.ZERO
+	
+	# Получаем размеры экрана
+	var viewport = get_viewport()
+	var screen_size = viewport.get_visible_rect().size
+	var camera = get_viewport().get_camera_2d()
+	
+	# Если камера есть, используем её позицию, иначе центр экрана
+	var camera_center = Vector2.ZERO
+	if camera:
+		camera_center = camera.global_position
+	else:
+		camera_center = player_reference.global_position
+	
+	# Вычисляем границы экрана с учетом позиции камеры
+	var screen_rect = Rect2(
+		camera_center - screen_size * 0.5,
+		screen_size
+	)
+	
+	# Расширяем границы на margin для спавна за пределами экрана
+	var spawn_rect = Rect2(
+		screen_rect.position - Vector2(screen_margin, screen_margin),
+		screen_rect.size + Vector2(screen_margin * 2, screen_margin * 2)
+	)
+	
+	# Выбираем случайную сторону экрана для спавна
+	var side = randi() % 4
+	var spawn_position = Vector2.ZERO
+	
+	match side:
+		0: # Верх
+			spawn_position = Vector2(
+				randf_range(spawn_rect.position.x, spawn_rect.position.x + spawn_rect.size.x),
+				spawn_rect.position.y
+			)
+		1: # Право
+			spawn_position = Vector2(
+				spawn_rect.position.x + spawn_rect.size.x,
+				randf_range(spawn_rect.position.y, spawn_rect.position.y + spawn_rect.size.y)
+			)
+		2: # Низ
+			spawn_position = Vector2(
+				randf_range(spawn_rect.position.x, spawn_rect.position.x + spawn_rect.size.x),
+				spawn_rect.position.y + spawn_rect.size.y
+			)
+		3: # Лево
+			spawn_position = Vector2(
+				spawn_rect.position.x,
+				randf_range(spawn_rect.position.y, spawn_rect.position.y + spawn_rect.size.y)
+			)
+	
+	# Дополнительно проверяем, что враг не спавнится слишком близко к игроку
+	var distance_to_player = spawn_position.distance_to(player_reference.global_position)
+	if distance_to_player < spawn_distance_min:
+		# Отодвигаем врага на минимальную дистанцию
+		var direction_from_player = (spawn_position - player_reference.global_position).normalized()
+		spawn_position = player_reference.global_position + direction_from_player * spawn_distance_min
+	
+	# Ограничиваем максимальную дистанцию
+	if distance_to_player > spawn_distance_max:
+		var direction_to_player = (player_reference.global_position - spawn_position).normalized()
+		spawn_position = player_reference.global_position + direction_to_player * spawn_distance_max
+	
+	return spawn_position
+
+func get_enemy_count() -> int:
+	"""Возвращает количество живых врагов"""
+	return spawned_enemies.size()
+
+func clear_all_enemies():
+	"""Удаляет всех врагов (включая обломки)"""
+	for enemy in spawned_enemies:
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	spawned_enemies.clear()
+	
+	# Также удаляем все обломки кораблей на поле
+	clear_all_destroyed_ships()
+
+func clear_all_destroyed_ships():
+	"""Удаляет все уничтоженные корабли (обломки) с поля"""
+	var all_enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in all_enemies:
+		if enemy.has_method("is_alive") and not enemy.is_alive():
+			# Подсчитываем разграбленные перед удалением
+			if enemy.has_method("is_wreckage_looted") and enemy.is_wreckage_looted():
+				looted_ships_count += 1
+			enemy.queue_free()
+
+func set_max_enemies(count: int):
+	"""Устанавливает максимальное количество врагов"""
+	max_enemies = max(0, count)
+
+func set_spawn_interval(interval: float):
+	"""Устанавливает интервал спавна"""
+	spawn_interval = max(0.1, interval)
+
+func set_spawn_distance_range(min_distance: float, max_distance: float):
+	"""Устанавливает диапазон дистанций спавна"""
+	spawn_distance_min = max(100.0, min_distance)
+	spawn_distance_max = max(spawn_distance_min + 100.0, max_distance)
+
+func set_screen_margin(margin: float):
+	"""Устанавливает отступ за пределы экрана"""
+	screen_margin = max(50.0, margin)
+
+func get_looted_ships_count() -> int:
+	"""Возвращает количество разграбленных кораблей"""
+	return looted_ships_count
+
+func reset_loot_counter():
+	"""Сбрасывает счетчик разграбленных кораблей"""
+	looted_ships_count = 0
+
+func get_active_wreckage_count() -> int:
+	"""Возвращает количество активных обломков на поле"""
+	var wreckage_count = 0
+	var all_enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in all_enemies:
+		if enemy.has_method("is_alive") and not enemy.is_alive() and enemy.has_method("can_be_looted") and enemy.can_be_looted():
+			wreckage_count += 1
+	return wreckage_count 

@@ -46,6 +46,8 @@ func update_smoke_system(delta):
 	var current_speed = 0.0
 	if target_node.has_method("get_player_velocity"):
 		current_speed = target_node.get_player_velocity().length()
+	elif target_node.has_method("get_ship_velocity"):
+		current_speed = target_node.get_ship_velocity().length()
 	elif target_node.has_method("get_velocity"):
 		current_speed = target_node.get_velocity().length()
 	elif "velocity" in target_node:
@@ -75,6 +77,8 @@ func spawn_smoke_particle():
 	var target_velocity = Vector2.ZERO
 	if target_node.has_method("get_player_velocity"):
 		target_velocity = target_node.get_player_velocity()
+	elif target_node.has_method("get_ship_velocity"):
+		target_velocity = target_node.get_ship_velocity()
 	elif target_node.has_method("get_velocity"):
 		target_velocity = target_node.get_velocity()
 	elif "velocity" in target_node:

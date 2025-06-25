@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://dm7xvmwbyolcb"]
+[gd_scene load_steps=5 format=3 uid="uid://dm7xvmwbyolcb"]
 
 [ext_resource type="PackedScene" uid="uid://b08rcym15ivtw" path="res://Scene/rocket.tscn" id="1_06yma"]
 [ext_resource type="PackedScene" uid="uid://bfirs6k1mblfn" path="res://Scene/asteroid.tscn" id="2_4kvl3"]
 [ext_resource type="PackedScene" uid="uid://ck44px42ecqy1" path="res://Scene/player.tscn" id="3_lttqn"]
+[ext_resource type="PackedScene" uid="uid://bevywlj1ombbj" path="res://Scene/enemy_ship_spawner.tscn" id="4_4kvl3"]
 
 [node name="MainScene" type="Node2D"]
 
@@ -14,3 +15,5 @@ position = Vector2(609, 492)
 
 [node name="Player" parent="." instance=ExtResource("3_lttqn")]
 position = Vector2(839, 510)
+
+[node name="EnemyShipSpawner" parent="." instance=ExtResource("4_4kvl3")]

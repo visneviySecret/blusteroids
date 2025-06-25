@@ -14,6 +14,14 @@ var movement_controller: PlayerMovementController
 var shooting_system: PlayerShootingSystem
 
 func _ready():
+	# Добавляем игрока в группу для обнаружения врагами
+	add_to_group("player")
+	
+	# Настраиваем слои коллизий
+	# Игрок находится на слое 3 (2^2 = 4), чтобы лазеры врагов могли с ним сталкиваться
+	collision_layer = 4  # Слой игрока
+	collision_mask = 1   # Сталкивается с врагами
+	
 	# Получаем ссылку на спрайт
 	find_player_sprite()
 	# Подключаем все системы
@@ -144,6 +152,12 @@ func set_laser_damage(new_damage: float):
 	"""Устанавливает урон лазера"""
 	if shooting_system:
 		shooting_system.set_laser_damage(new_damage)
+
+func take_damage(damage: float):
+	"""Получает урон от врагов"""
+	print("Игрок получил урон: ", damage)
+	# Здесь можно добавить систему здоровья игрока
+	# Пока что просто выводим сообщение
 
 # Опциональные методы для обработки событий крюка (можно переопределить в наследниках)
 func on_hook_attached(_position_to_attach: Vector2):
