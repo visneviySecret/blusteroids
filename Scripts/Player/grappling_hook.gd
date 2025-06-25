@@ -369,7 +369,10 @@ func update_attached_hook_position():
 		retract_hook()
 		return
 	
-	if is_attached_to_moving_object:
+	# Динамически проверяем, движется ли объект в данный момент
+	var is_currently_moving = is_moving_object(attached_target)
+	
+	if is_currently_moving:
 		# Обновляем позицию крюка относительно движущегося объекта
 		hook_body.global_position = attached_target.global_position + attachment_offset
 		
@@ -379,6 +382,7 @@ func update_attached_hook_position():
 			if distance_to_player <= 50.0:  # Пороговое расстояние
 				retract_hook()
 				return
+	# Если объект статичен, крюк остается на месте (не обновляем позицию)
 
 func is_moving_object(object: Node) -> bool:
 	"""Определяет, является ли объект движущимся"""
@@ -392,10 +396,13 @@ func is_moving_object(object: Node) -> bool:
 	
 	# Проверка для астероидов
 	if object.is_in_group("asteroids"):
+		# Проверяем все возможные состояния движения астероида
 		if object.has_method("is_being_ridden") and object.is_being_ridden():
 			return true
-		if object.has_method("is_moving_by_inertia_check"):
-			return object.is_moving_by_inertia_check()
+		if object.has_method("is_moving_by_inertia_check") and object.is_moving_by_inertia_check():
+			return true
+		if object.has_method("is_moving_autonomously_check") and object.is_moving_autonomously_check():
+			return true
 		return false
 	
 	# Для других объектов проверяем базовые характеристики движения
@@ -416,7 +423,9 @@ func get_attached_target() -> Node2D:
 
 func is_attached_to_moving_target() -> bool:
 	"""Проверяет, прикреплен ли крюк к движущемуся объекту"""
-	return current_state == HookState.ATTACHED and is_attached_to_moving_object
+	if current_state == HookState.ATTACHED and attached_target:
+		return is_moving_object(attached_target)
+	return false
 
 func is_attached_to_target() -> bool:
 	"""Проверяет, прикреплен ли крюк к какому-либо объекту"""
@@ -440,29 +449,9 @@ func force_retract():
 func set_auto_retract_distance(_distance: float):
 	"""Устанавливает расстояние автоматического возврата для движущихся объектов"""
 	# Обновляем пороговое расстояние в методе update_attached_hook_position
-	pass 
+	pass
 
 func check_attached_target_validity():
 	"""Проверяет, валиден ли прикрепленный объект"""
-	if not attached_target or not is_instance_valid(attached_target):
-		retract_hook()
-		return
-	
-	# НЕ отсоединяем крюк от обломков кораблей - они остаются валидными целями
-	# Проверяем только полное уничтожение объекта
-	if attached_target.has_method("is_destroyed") and attached_target.is_destroyed():
-		retract_hook()
-		return
-	
-	# Проверяем, не находится ли объект в процессе удаления
-	if attached_target.is_queued_for_deletion():
-		retract_hook()
-		return
-	
-	if is_attached_to_moving_object:
-		# Проверяем расстояние до игрока для автоматического возврата
-		if player_reference:
-			var distance_to_player = player_reference.global_position.distance_to(hook_body.global_position)
-			if distance_to_player <= 50.0:  # Пороговое расстояние
-				retract_hook()
-				return
+	# Вся логика проверки теперь в update_attached_hook_position
+	update_attached_hook_position()
