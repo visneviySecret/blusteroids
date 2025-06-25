@@ -1,5 +1,7 @@
 extends RigidBody2D
-class_name Asteroid
+
+# Импорт общей системы движения
+const MovementSystem = preload("../utils/common_movement_system.gd")
 
 # Скрипт астероида с возможностью зацепления и уничтожения
 
@@ -32,13 +34,13 @@ var dodge_timer: float = 0.0
 var is_dodging: bool = false
 
 # Параметры движения для общей системы
-var movement_params: CommonMovementSystem.MovementParams
+var movement_params: MovementSystem.MovementParams
 
 func _ready():
 	current_health = max_health
 	setup_asteroid()
 	# Инициализируем параметры движения
-	movement_params = CommonMovementSystem.MovementParams.new(
+	movement_params = MovementSystem.MovementParams.new(
 		max_speed, acceleration, friction, max_tilt_angle, dodge_force, dodge_cooldown
 	)
 
@@ -75,6 +77,10 @@ func start_riding(player: Node2D):
 	is_being_ridden = true
 	rider = player
 	
+	# Устанавливаем z-index игрока ниже астероида
+	if rider.has_method("set"):
+		rider.z_index = 9
+	
 	# Разморозить астероид для движения
 	freeze = false
 	freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
@@ -83,7 +89,7 @@ func start_riding(player: Node2D):
 	var asteroid_top_y = calculate_asteroid_top()
 	
 	# Размещаем игрока на верхушке астероида
-	rider_offset = Vector2(375, asteroid_top_y - 50)  # -30 для зазора над астероидом
+	rider_offset = Vector2(0, asteroid_top_y - 30)  # -30 для зазора над астероидом
 	
 	# Сразу перемещаем игрока в правильную позицию
 	update_rider_position()
@@ -114,6 +120,10 @@ func stop_riding():
 	if not is_being_ridden:
 		return
 	
+	# Восстанавливаем исходный z-index игрока
+	if rider and rider.has_method("set"):
+		rider.z_index = 20  # Устанавливаем высокий z-index после схода
+	
 	is_being_ridden = false
 	rider = null
 	
@@ -125,10 +135,10 @@ func stop_riding():
 func update_movement(delta):
 	"""Обновляет движение астероида (используя общую систему)"""
 	# Получаем ввод от игрока
-	input_vector = CommonMovementSystem.get_wasd_input()
+	input_vector = MovementSystem.get_wasd_input()
 	
 	# Обновляем таймер доджа
-	var dodge_result = CommonMovementSystem.update_dodge_timer(dodge_timer, delta)
+	var dodge_result = MovementSystem.update_dodge_timer(dodge_timer, delta)
 	dodge_timer = dodge_result[0]
 	is_dodging = dodge_result[1]
 	
@@ -144,11 +154,11 @@ func update_movement(delta):
 
 func get_input():
 	"""Получает ввод от игрока (теперь использует общую систему)"""
-	input_vector = CommonMovementSystem.get_wasd_input()
+	input_vector = MovementSystem.get_wasd_input()
 
 func apply_movement(delta):
 	"""Применяет движение к астероиду (используя общую систему)"""
-	asteroid_velocity = CommonMovementSystem.apply_movement_to_velocity(
+	asteroid_velocity = MovementSystem.apply_movement_to_velocity(
 		asteroid_velocity, input_vector, movement_params, delta
 	)
 	
@@ -156,25 +166,25 @@ func apply_movement(delta):
 	var collision = move_and_collide(asteroid_velocity * delta)
 	if collision:
 		# Простая обработка столкновений - останавливаемся
-		asteroid_velocity = CommonMovementSystem.handle_collision_stop(asteroid_velocity)
+		asteroid_velocity = MovementSystem.handle_collision_stop(asteroid_velocity)
 
 func apply_tilt(delta):
 	"""Применяет наклон к астероиду при движении (используя общую систему)"""
-	CommonMovementSystem.apply_tilt_to_sprite(asteroid_sprite, asteroid_velocity, movement_params, delta)
+	MovementSystem.apply_tilt_to_sprite(asteroid_sprite, asteroid_velocity, movement_params, delta)
 
 func update_dodge_timer(delta):
 	"""Обновляет таймер перезарядки доджа (теперь использует общую систему)"""
-	var dodge_result = CommonMovementSystem.update_dodge_timer(dodge_timer, delta)
+	var dodge_result = MovementSystem.update_dodge_timer(dodge_timer, delta)
 	dodge_timer = dodge_result[0]
 	is_dodging = dodge_result[1]
 
 func perform_dodge():
 	"""Выполняет додж астероида в направлении движения (используя общую систему)"""
-	if not CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector):
+	if not MovementSystem.can_perform_dodge(dodge_timer, input_vector):
 		return
 	
 	# Выполняем додж
-	asteroid_velocity = CommonMovementSystem.perform_dodge_on_velocity(
+	asteroid_velocity = MovementSystem.perform_dodge_on_velocity(
 		asteroid_velocity, input_vector, dodge_force
 	)
 	
@@ -199,7 +209,7 @@ func update_rider_position():
 
 func can_dodge() -> bool:
 	"""Проверяет, может ли астероид выполнить додж (используя общую систему)"""
-	return CommonMovementSystem.can_perform_dodge(dodge_timer, input_vector) and is_being_ridden
+	return MovementSystem.can_perform_dodge(dodge_timer, input_vector) and is_being_ridden
 
 func get_asteroid_velocity() -> Vector2:
 	"""Возвращает текущую скорость астероида"""
@@ -207,7 +217,7 @@ func get_asteroid_velocity() -> Vector2:
 
 func is_moving() -> bool:
 	"""Проверяет, движется ли астероид (используя общую систему)"""
-	return CommonMovementSystem.is_moving_from_input(input_vector) and is_being_ridden
+	return MovementSystem.is_moving_from_input(input_vector) and is_being_ridden
 
 func find_existing_components():
 	"""Находит существующие компоненты астероида в сцене"""

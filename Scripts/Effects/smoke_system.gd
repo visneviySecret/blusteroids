@@ -80,13 +80,11 @@ func spawn_smoke_particle():
 	elif "velocity" in target_node:
 		target_velocity = target_node.velocity
 	
-	# Позиционируем частицу позади цели
-	var spawn_offset = Vector2(
-        -25, 50
-	)
+	# Вычисляем центр коллизии игрока
+	var collision_center = get_target_collision_center()
 	
-	
-	smoke.position = target_node.global_position + spawn_offset
+	# Позиционируем частицу в центре коллизии
+	smoke.position = collision_center
 	
 	# Задаем начальную скорость частицы (противоположную движению цели)
 	var particle_velocity = -target_velocity * smoke_velocity_factor
@@ -99,6 +97,31 @@ func spawn_smoke_particle():
 	
 	# Добавляем частицу в сцену отложенно
 	particle_parent.add_child.call_deferred(smoke)
+
+func get_target_collision_center() -> Vector2:
+	"""Вычисляет центр коллизии целевого узла (игрока)"""
+	if not target_node:
+		return Vector2.ZERO
+	
+	# Начинаем с глобальной позиции игрока
+	var center_position = target_node.global_position
+	
+	# Ищем CollisionShape2D среди дочерних узлов
+	for child in target_node.get_children():
+		if child is CollisionShape2D:
+			var collision_shape = child as CollisionShape2D
+			
+			# Получаем позицию коллизии с учетом масштаба
+			var collision_offset = collision_shape.position * collision_shape.scale
+			
+			# Добавляем смещение коллизии к позиции игрока с учетом масштаба игрока
+			if "scale" in target_node:
+				collision_offset *= target_node.scale
+			
+			center_position += collision_offset
+			break
+	
+	return center_position
 
 func enable_smoke(enabled: bool = true):
 	"""Включает или выключает генерацию дыма"""
