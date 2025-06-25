@@ -1,9 +1,6 @@
 extends Camera2D
 class_name CameraFollow
 
-# Импорт класса эффектов
-const CameraEffects = preload("res://Scripts/Camera/camera_effects.gd")
-
 # Цель, за которой следует камера
 var target: Node2D
 # Скорость следования камеры
@@ -27,7 +24,7 @@ var previous_target_position: Vector2
 var velocity_prediction: Vector2
 
 # Система эффектов
-var effects_system: CameraEffects
+var effects_system
 
 func _ready():
 	# Делаем эту камеру текущей
@@ -121,9 +118,9 @@ func set_deadzone(size: Vector2):
 	"""Устанавливает размер зоны нечувствительности"""
 	deadzone_size = size
 
-func enable_smoothing(enabled: bool):
+func enable_smoothing(smooth_enabled: bool):
 	"""Включает/выключает сглаживание"""
-	smoothing_enabled = enabled
+	smoothing_enabled = smooth_enabled
 
 func reset_to_target():
 	"""Мгновенно перемещает камеру к цели"""

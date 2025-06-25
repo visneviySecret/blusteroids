@@ -2,8 +2,6 @@ extends CharacterBody2D
 
 # Импорт конфига коллизий
 const Layers = preload("res://Scripts/config/collision_layers.gd")
-# Импорт системы топлива
-const PlayerFuelSystem = preload("res://Scripts/Player/player_fuel_system.gd")
 
 # Основной скрипт игрока - координирует работу компонентов
 
@@ -18,7 +16,7 @@ var movement_controller: PlayerMovementController
 # Система стрельбы
 var shooting_system: PlayerShootingSystem
 # Система топлива
-var fuel_system: PlayerFuelSystem
+var fuel_system
 
 func _ready():
 	# Добавляем игрока в группу для обнаружения врагами

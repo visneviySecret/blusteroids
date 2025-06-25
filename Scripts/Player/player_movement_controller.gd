@@ -1,9 +1,6 @@
 extends Node
 class_name PlayerMovementController
 
-# Импорт системы топлива
-const PlayerFuelSystem = preload("res://Scripts/Player/player_fuel_system.gd")
-
 # Контроллер движения и управления игроком
 
 # Параметры движения
@@ -19,7 +16,7 @@ const PlayerFuelSystem = preload("res://Scripts/Player/player_fuel_system.gd")
 # Ссылки на компоненты игрока
 var player_body: CharacterBody2D
 var player_sprite: Sprite2D
-var fuel_system: PlayerFuelSystem
+var fuel_system  # Ссылка на систему топлива (без типизации чтобы избежать конфликта имен)
 
 # Переменные движения
 var input_vector: Vector2 = Vector2.ZERO
@@ -68,7 +65,7 @@ func find_player_sprite():
 			if child is Sprite2D:
 				player_sprite = child
 				break
-	
+
 func find_fuel_system():
 	"""Ищет систему топлива среди дочерних узлов игрока"""
 	if player_body and player_body.has_node("FuelSystem"):
