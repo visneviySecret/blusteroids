@@ -460,6 +460,10 @@ func is_alive() -> bool:
 	"""Проверяет, жив ли корабль"""
 	return current_health > 0
 
+func is_destroyed() -> bool:
+	"""Проверяет, полностью ли уничтожен корабль (для крюк-кошки)"""
+	return is_fading or is_queued_for_deletion()
+
 func get_health_ratio() -> float:
 	"""Возвращает отношение текущего здоровья к максимальному"""
 	return current_health / max_health

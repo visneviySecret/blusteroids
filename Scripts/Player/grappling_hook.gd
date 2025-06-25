@@ -204,8 +204,6 @@ func _on_hook_collision(body: Node):
 	# Определяем, является ли объект движущимся
 	is_attached_to_moving_object = is_moving_object(body)
 	
-	# Специальная обработка для обломков кораблей
-	var is_wreckage = body.has_method("is_alive") and not body.is_alive()
 	
 	if is_attached_to_moving_object:
 		# Вычисляем смещение точки прикрепления относительно объекта
@@ -232,8 +230,11 @@ func connect_to_destruction_signals(object: Node):
 	if object.has_signal("destroyed") and not object.destroyed.is_connected(_on_attached_object_destroyed):
 		object.destroyed.connect(_on_attached_object_destroyed)
 	
-	if object.has_signal("ship_destroyed") and not object.ship_destroyed.is_connected(_on_attached_object_destroyed):
-		object.ship_destroyed.connect(_on_attached_object_destroyed)
+	# НЕ подключаемся к ship_destroyed для обломков - этот сигнал означает превращение в обломки, а не полное уничтожение
+	# Для живых кораблей подключаемся к ship_destroyed только если корабль еще жив
+	if object.has_signal("ship_destroyed") and object.has_method("is_alive") and object.is_alive():
+		if not object.ship_destroyed.is_connected(_on_attached_object_destroyed):
+			object.ship_destroyed.connect(_on_attached_object_destroyed)
 
 func _on_attached_object_destroyed():
 	"""Вызывается при уничтожении прикрепленного объекта"""
@@ -357,12 +358,8 @@ func update_attached_hook_position():
 		retract_hook()
 		return
 	
-	# Проверяем, жив ли объект (для любых объектов с методом is_alive)
-	if attached_target.has_method("is_alive") and not attached_target.is_alive():
-		retract_hook()
-		return
-	
-	# Дополнительная проверка для объектов с методом is_destroyed
+	# НЕ отсоединяем крюк от обломков кораблей - они остаются валидными целями
+	# Проверяем только полное уничтожение объекта
 	if attached_target.has_method("is_destroyed") and attached_target.is_destroyed():
 		retract_hook()
 		return
@@ -371,14 +368,6 @@ func update_attached_hook_position():
 	if attached_target.is_queued_for_deletion():
 		retract_hook()
 		return
-	
-	# Специальная проверка для астероидов - если они остановились по инерции
-	if attached_target.has_method("is_moving_by_inertia_check") and not attached_target.is_moving_by_inertia_check():
-		# Астероид остановился - теперь он статичный
-		if is_attached_to_moving_object:
-			is_attached_to_moving_object = false
-			# Пересчитываем смещение для статичного объекта
-			attachment_offset = Vector2.ZERO
 	
 	if is_attached_to_moving_object:
 		# Обновляем позицию крюка относительно движущегося объекта
@@ -395,33 +384,31 @@ func is_moving_object(object: Node) -> bool:
 	"""Определяет, является ли объект движущимся"""
 	# Специальная проверка для обломков кораблей
 	if object.has_method("is_alive") and not object.is_alive():
-		# Это обломки корабля - считаем их статичными для притягивания
+		# Это обломки корабля - проверяем, движутся ли они
+		if object.has_method("is_wreckage_still_moving"):
+			return object.is_wreckage_still_moving()
+		# Если метода нет, считаем статичными для притягивания
 		return false
 	
-	# Специальная проверка для астероидов, движущихся по инерции
-	if object.has_method("is_moving_by_inertia_check") and object.is_moving_by_inertia_check():
-		return true
-	
-	# Проверяем по типу объекта
-	if object is CharacterBody2D or object is RigidBody2D:
-		return true
-	
-	# Проверяем по группам
-	if object.is_in_group("enemies") or object.is_in_group("moving_objects"):
-		return true
-	
-	# Проверяем по наличию определенных методов (корабли)
-	if object.has_method("get_ship_velocity") or object.has_method("get_current_speed"):
-		return true
-	
-	# Проверяем по классу
-	if object.get_script():
-		var script_path = object.get_script().resource_path
-		if "ship" in script_path.to_lower() or "enemy" in script_path.to_lower():
+	# Проверка для астероидов
+	if object.is_in_group("asteroids"):
+		if object.has_method("is_being_ridden") and object.is_being_ridden():
 			return true
+		if object.has_method("is_moving_by_inertia_check"):
+			return object.is_moving_by_inertia_check()
+		return false
+	
+	# Для других объектов проверяем базовые характеристики движения
+	if object is RigidBody2D:
+		var rigid_body = object as RigidBody2D
+		return rigid_body.freeze_mode != RigidBody2D.FREEZE_MODE_KINEMATIC or rigid_body.linear_velocity.length() > 10.0
+	
+	if object is CharacterBody2D:
+		var char_body = object as CharacterBody2D
+		return char_body.velocity.length() > 10.0
 	
 	# По умолчанию считаем объект статичным
-	return false 
+	return false
 
 func get_attached_target() -> Node2D:
 	"""Возвращает объект, к которому прикреплен крюк"""
@@ -450,7 +437,7 @@ func force_retract():
 	if current_state == HookState.ATTACHED or current_state == HookState.FLYING:
 		retract_hook()
 
-func set_auto_retract_distance(distance: float):
+func set_auto_retract_distance(_distance: float):
 	"""Устанавливает расстояние автоматического возврата для движущихся объектов"""
 	# Обновляем пороговое расстояние в методе update_attached_hook_position
 	pass 
@@ -461,12 +448,8 @@ func check_attached_target_validity():
 		retract_hook()
 		return
 	
-	# Проверяем, жив ли объект (для любых объектов с методом is_alive)
-	if attached_target.has_method("is_alive") and not attached_target.is_alive():
-		retract_hook()
-		return
-	
-	# Дополнительная проверка для объектов с методом is_destroyed
+	# НЕ отсоединяем крюк от обломков кораблей - они остаются валидными целями
+	# Проверяем только полное уничтожение объекта
 	if attached_target.has_method("is_destroyed") and attached_target.is_destroyed():
 		retract_hook()
 		return
