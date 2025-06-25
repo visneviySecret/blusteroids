@@ -53,7 +53,7 @@ func setup_hook_components():
 	# Создаем визуальное представление крюка с якорем
 	hook_sprite = Sprite2D.new()
 	hook_sprite.texture = load("res://Assets/Images/Player/anchor.svg")
-	hook_sprite.scale = Vector2(4, 4)  # Размер якоря
+	hook_sprite.scale = Vector2(3, 3)  # Размер якоря
 	hook_body.add_child(hook_sprite)
 	
 	# Создаем линию для веревки (белого цвета)
