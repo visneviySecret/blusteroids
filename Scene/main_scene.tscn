@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://dm7xvmwbyolcb"]
+[gd_scene load_steps=7 format=3 uid="uid://dm7xvmwbyolcb"]
 
 [ext_resource type="PackedScene" uid="uid://ck44px42ecqy1" path="res://Scene/player.tscn" id="3_lttqn"]
 [ext_resource type="PackedScene" uid="uid://bevywlj1ombbj" path="res://Scene/enemy_ship_spawner.tscn" id="4_4kvl3"]
 [ext_resource type="PackedScene" uid="uid://ctom63geh8dft" path="res://Scene/asteroid_spawner.tscn" id="5_lttqn"]
 [ext_resource type="PackedScene" path="res://Scene/camera_follow.tscn" id="6_camera"]
+[ext_resource type="PackedScene" uid="uid://dv26fo5pgouk2" path="res://Scene/background.tscn" id="6_lee88"]
 [ext_resource type="Script" uid="uid://c8qdusmb5fi77" path="res://Scripts/Camera/camera_manager.gd" id="7_camera_manager"]
 
 [node name="MainScene" type="Node2D"]
@@ -19,3 +20,5 @@ position = Vector2(839, 510)
 [node name="EnemyShipSpawner" parent="." instance=ExtResource("4_4kvl3")]
 
 [node name="AsteroidSpawner" parent="." instance=ExtResource("5_lttqn")]
+
+[node name="Background" parent="." instance=ExtResource("6_lee88")]
