@@ -25,7 +25,7 @@ const Layers = preload("res://Scripts/config/collision_layers.gd")
 @export var dodge_cooldown: float = 1.0
 
 # Параметры инерционного движения (после спрыгивания игрока)
-@export var inertia_friction: float = 150.0  # Трение для замедления астероида
+@export var inertia_friction: float = 0.0  # Трение для замедления астероида
 @export var inertia_min_speed: float = 15.0  # Минимальная скорость для остановки астероида
 
 var current_health: float
