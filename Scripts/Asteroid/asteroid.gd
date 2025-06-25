@@ -49,6 +49,10 @@ var is_dodging: bool = false
 var inertia_velocity: Vector2 = Vector2.ZERO  # Скорость движения по инерции
 var is_moving_by_inertia: bool = false  # Флаг движения по инерции
 
+# Переменные автономного движения (для спавнера)
+var autonomous_velocity: Vector2 = Vector2.ZERO  # Скорость автономного движения
+var is_moving_autonomously: bool = false  # Флаг автономного движения
+
 # Параметры инерции для астероида
 var inertia_params: MovementSystem.InertiaParams
 
@@ -70,8 +74,9 @@ func _ready():
 
 func setup_asteroid():
 	"""Настраивает астероид"""
-	# Добавляем в группу для зацепления крюком
+	# Добавляем в группы
 	add_to_group("grappleable_objects")
+	add_to_group("asteroids")
 	
 	# Отключаем гравитацию для астероида, чтобы он завис в воздухе
 	gravity_scale = 0.0
@@ -88,7 +93,7 @@ func setup_asteroid():
 	find_existing_components()
 
 func _physics_process(delta):
-	"""Обновляет движение астероида, если на нем едет игрок"""
+	"""Обновляет движение астероида в зависимости от режима"""
 	if is_being_ridden and rider:
 		# Движение с игроком
 		update_movement(delta)
@@ -96,11 +101,18 @@ func _physics_process(delta):
 	elif is_moving_by_inertia:
 		# Инерционное движение после спрыгивания игрока
 		update_inertia_movement(delta)
+	elif is_moving_autonomously:
+		# Автономное движение (для спавнера)
+		update_autonomous_movement(delta)
 
 func start_riding(player: Node2D):
 	"""Начинает езду игрока на астероиде"""
 	if is_being_ridden:
 		return false
+	
+	# Останавливаем автономное движение
+	if is_moving_autonomously:
+		stop_autonomous_movement()
 	
 	is_being_ridden = true
 	rider = player
@@ -269,6 +281,8 @@ func is_moving() -> bool:
 		return MovementSystem.is_moving_from_input(input_vector)
 	elif is_moving_by_inertia:
 		return inertia_velocity.length() > inertia_min_speed
+	elif is_moving_autonomously:
+		return autonomous_velocity.length() > 0
 	else:
 		return false
 
@@ -348,6 +362,10 @@ func get_health_ratio() -> float:
 
 func set_inertia_velocity(new_velocity: Vector2):
 	"""Устанавливает скорость инерционного движения астероида"""
+	# Останавливаем автономное движение
+	if is_moving_autonomously:
+		stop_autonomous_movement()
+	
 	var inertia_data = MovementSystem.set_inertia_from_velocity(new_velocity, inertia_min_speed)
 	inertia_velocity = inertia_data[0]
 	is_moving_by_inertia = inertia_data[1]
@@ -404,4 +422,42 @@ func update_inertia_movement(delta):
 	
 	# Применяем наклон к астероиду при движении
 	if asteroid_sprite:
-		MovementSystem.apply_tilt_to_sprite(asteroid_sprite, inertia_velocity, movement_params, delta) 
+		MovementSystem.apply_tilt_to_sprite(asteroid_sprite, inertia_velocity, movement_params, delta)
+
+# Методы автономного движения для спавнера
+
+func set_autonomous_velocity(velocity: Vector2):
+	"""Устанавливает автономную скорость движения астероида (для спавнера)"""
+	autonomous_velocity = velocity
+	is_moving_autonomously = velocity != Vector2.ZERO
+	
+	if is_moving_autonomously:
+		# Разморозить астероид для автономного движения
+		freeze = false
+		freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
+
+func update_autonomous_movement(delta):
+	"""Обновляет автономное движение астероида"""
+	if not is_moving_autonomously:
+		return
+	
+	# Применяем автономную скорость к астероиду
+	var collision = move_and_collide(autonomous_velocity * delta)
+	if collision:
+		# При столкновении во время автономного движения - просто останавливаемся
+		stop_autonomous_movement()
+
+func stop_autonomous_movement():
+	"""Останавливает автономное движение"""
+	autonomous_velocity = Vector2.ZERO
+	is_moving_autonomously = false
+	freeze = true
+	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
+
+func get_autonomous_velocity() -> Vector2:
+	"""Возвращает текущую автономную скорость"""
+	return autonomous_velocity
+
+func is_moving_autonomously_check() -> bool:
+	"""Проверяет, движется ли астероид автономно"""
+	return is_moving_autonomously 

@@ -3,6 +3,9 @@ class_name EnemyShipSpawner
 
 # Система спавна врагов-кораблей
 
+# Импорт общей системы спавна
+const SpawnSystem = preload("../utils/spawn_system.gd")
+
 # Параметры спавна
 @export var max_enemies: int = 3
 @export var spawn_distance_min: float = 800.0  # Минимальное расстояние спавна от игрока
@@ -17,11 +20,21 @@ var spawned_enemies: Array[EnemyShip] = []
 var spawn_timer: float = 0.0
 var looted_ships_count: int = 0  # Счетчик разграбленных кораблей
 
+# Параметры спавна для общей системы
+var spawn_params: SpawnSystem.SpawnParams
+
 # Загружаем сцену ракеты
 const RocketScene = preload("res://Scene/rocket.tscn")
 
 func _ready():
 	find_player()
+	# Настраиваем параметры спавна для общей системы
+	spawn_params = SpawnSystem.SpawnParams.new(
+		screen_margin,           # screen_margin
+		spawn_distance_min,      # min_distance_from_target
+		spawn_distance_max,      # max_distance_from_target
+		0.0                      # additional_offset (не нужен для кораблей)
+	)
 	# Спавним первого врага сразу
 	spawn_timer = spawn_interval
 
@@ -60,8 +73,8 @@ func spawn_enemy():
 	var enemy = RocketScene.instantiate() as EnemyShip
 	enemy.name = "EnemyShip_" + str(spawned_enemies.size())
 	
-	# Позиционируем врага за пределами экрана
-	var spawn_position = get_offscreen_spawn_position()
+	# Позиционируем врага за пределами экрана используя общую систему
+	var spawn_position = SpawnSystem.get_offscreen_spawn_position(get_viewport(), player_reference, spawn_params)
 	enemy.global_position = spawn_position
 	
 	# Устанавливаем центр орбиты
@@ -74,75 +87,6 @@ func spawn_enemy():
 	# Добавляем в сцену
 	get_parent().add_child(enemy)
 	spawned_enemies.append(enemy)
-
-func get_offscreen_spawn_position() -> Vector2:
-	"""Вычисляет позицию спавна за пределами экрана"""
-	if not player_reference:
-		return Vector2.ZERO
-	
-	# Получаем размеры экрана
-	var viewport = get_viewport()
-	var screen_size = viewport.get_visible_rect().size
-	var camera = get_viewport().get_camera_2d()
-	
-	# Если камера есть, используем её позицию, иначе центр экрана
-	var camera_center = Vector2.ZERO
-	if camera:
-		camera_center = camera.global_position
-	else:
-		camera_center = player_reference.global_position
-	
-	# Вычисляем границы экрана с учетом позиции камеры
-	var screen_rect = Rect2(
-		camera_center - screen_size * 0.5,
-		screen_size
-	)
-	
-	# Расширяем границы на margin для спавна за пределами экрана
-	var spawn_rect = Rect2(
-		screen_rect.position - Vector2(screen_margin, screen_margin),
-		screen_rect.size + Vector2(screen_margin * 2, screen_margin * 2)
-	)
-	
-	# Выбираем случайную сторону экрана для спавна
-	var side = randi() % 4
-	var spawn_position = Vector2.ZERO
-	
-	match side:
-		0: # Верх
-			spawn_position = Vector2(
-				randf_range(spawn_rect.position.x, spawn_rect.position.x + spawn_rect.size.x),
-				spawn_rect.position.y
-			)
-		1: # Право
-			spawn_position = Vector2(
-				spawn_rect.position.x + spawn_rect.size.x,
-				randf_range(spawn_rect.position.y, spawn_rect.position.y + spawn_rect.size.y)
-			)
-		2: # Низ
-			spawn_position = Vector2(
-				randf_range(spawn_rect.position.x, spawn_rect.position.x + spawn_rect.size.x),
-				spawn_rect.position.y + spawn_rect.size.y
-			)
-		3: # Лево
-			spawn_position = Vector2(
-				spawn_rect.position.x,
-				randf_range(spawn_rect.position.y, spawn_rect.position.y + spawn_rect.size.y)
-			)
-	
-	# Дополнительно проверяем, что враг не спавнится слишком близко к игроку
-	var distance_to_player = spawn_position.distance_to(player_reference.global_position)
-	if distance_to_player < spawn_distance_min:
-		# Отодвигаем врага на минимальную дистанцию
-		var direction_from_player = (spawn_position - player_reference.global_position).normalized()
-		spawn_position = player_reference.global_position + direction_from_player * spawn_distance_min
-	
-	# Ограничиваем максимальную дистанцию
-	if distance_to_player > spawn_distance_max:
-		var direction_to_player = (player_reference.global_position - spawn_position).normalized()
-		spawn_position = player_reference.global_position + direction_to_player * spawn_distance_max
-	
-	return spawn_position
 
 func get_enemy_count() -> int:
 	"""Возвращает количество живых врагов"""
