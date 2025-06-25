@@ -222,4 +222,26 @@ func is_player_in_attack_range() -> bool:
 
 func is_player_too_close() -> bool:
 	"""Проверяет, слишком ли близко игрок"""
-	return get_distance_to_player() <= flee_range 
+	return get_distance_to_player() <= flee_range
+
+func on_wreckage_looted():
+	"""Переопределяем метод лутания - даем игроку топливо"""
+	if not player_reference:
+		return
+	
+	# Генерируем случайное количество топлива от 5 до 30 единиц
+	var fuel_bonus = randf_range(5.0, 30.0)
+	
+	# Добавляем топливо игроку через систему топлива
+	var fuel_system = player_reference.get_fuel_system()
+	if fuel_system and fuel_system.has_method("add_fuel_bonus"):
+		fuel_system.add_fuel_bonus(fuel_bonus)
+	elif fuel_system and fuel_system.has_method("change_fuel"):
+		fuel_system.change_fuel(fuel_bonus)
+	else:
+		# Резервный способ через прямой доступ к узлу
+		var fuel_node = player_reference.get_node_or_null("FuelSystem")
+		if fuel_node and fuel_node.has_method("add_fuel_bonus"):
+			fuel_node.add_fuel_bonus(fuel_bonus)
+		elif fuel_node and fuel_node.has_method("change_fuel"):
+			fuel_node.change_fuel(fuel_bonus)

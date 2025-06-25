@@ -233,3 +233,7 @@ func refill_fuel():
 	"""Полностью заправляет топливо"""
 	if fuel_system:
 		fuel_system.refill_fuel()
+
+func get_fuel_system():
+	"""Возвращает ссылку на систему топлива"""
+	return fuel_system

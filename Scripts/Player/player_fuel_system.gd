@@ -160,4 +160,39 @@ func set_fuel_consumption_rate(new_rate: float):
 
 func set_fuel_regeneration_rate(new_rate: float):
 	"""Устанавливает скорость восстановления топлива"""
-	fuel_regeneration_rate = new_rate 
+	fuel_regeneration_rate = new_rate
+
+func add_fuel_bonus(amount: float):
+	"""Добавляет бонусное топливо с визуальным эффектом"""
+	if amount <= 0:
+		return
+	
+	# Добавляем топливо
+	change_fuel(amount)
+	
+	# Создаем визуальный эффект
+	show_fuel_bonus_effect(amount)
+	
+func show_fuel_bonus_effect(amount: float):
+	"""Показывает визуальный эффект получения топлива"""
+	if not fuel_bar:
+		return
+	
+	# Создаем лейбл для отображения бонуса
+	var bonus_label = Label.new()
+	bonus_label.text = "+%.0f топлива" % amount
+	bonus_label.modulate = Color.GREEN
+	bonus_label.z_index = 100
+	
+	# Позиционируем лейбл над полоской топлива
+	bonus_label.position = fuel_bar.position + Vector2(0, -30)
+	bonus_label.size = Vector2(100, 20)
+	
+	# Добавляем к родителю полоски топлива
+	fuel_bar.get_parent().add_child(bonus_label)
+	
+	# Создаем анимацию исчезновения
+	var tween = bonus_label.create_tween()
+	tween.parallel().tween_property(bonus_label, "position:y", bonus_label.position.y - 50, 2.0)
+	tween.parallel().tween_property(bonus_label, "modulate:a", 0.0, 2.0)
+	tween.tween_callback(func(): bonus_label.queue_free()) 
