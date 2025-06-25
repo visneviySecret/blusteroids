@@ -25,8 +25,8 @@ signal asteroid_destroyed(asteroid: Asteroid)
 @export var max_speed: float = 300.0  # Максимальная скорость
 
 # Параметры здоровья в зависимости от размера
-@export var base_health: float = 20.0
-@export var health_scale_multiplier: float = 1.5  # Увеличение здоровья для больших астероидов
+@export var base_health: float = 5.0
+@export var health_scale_multiplier: float = 1.1  # Увеличение здоровья для больших астероидов
 
 # Ссылки на ресурсы
 @export var asteroid_scene: PackedScene
