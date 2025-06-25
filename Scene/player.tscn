@@ -29,9 +29,9 @@ shape = SubResource("RectangleShape2D_hqtel")
 
 [node name="FuelBar" parent="." instance=ExtResource("3_xa75v")]
 offset_left = -42.3077
-offset_top = 42.3077
+offset_top = 67.6923
 offset_right = 39.6923
-offset_bottom = 48.3077
+offset_bottom = 73.6923
 theme_override_styles/background = SubResource("StyleBoxFlat_58ae2")
 theme_override_styles/fill = SubResource("StyleBoxFlat_ivevv")
 show_percentage = false

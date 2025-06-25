@@ -28,6 +28,10 @@ signal asteroid_destroyed(asteroid: Asteroid)
 @export var base_health: float = 5.0
 @export var health_scale_multiplier: float = 1.1  # Увеличение здоровья для больших астероидов
 
+# Параметры топливных астероидов
+@export var fuel_asteroid_chance: float = 1  # 0% шанс спавна топливного астероида
+@export var fuel_asteroid_texture: Texture2D  # Специальная текстура для топливных астероидов
+
 # Ссылки на ресурсы
 @export var asteroid_scene: PackedScene
 @export var asteroid_textures: Array[Texture2D] = []
@@ -102,6 +106,16 @@ func load_default_textures():
 			var texture = load(path) as Texture2D
 			if texture:
 				asteroid_textures.append(texture)
+	
+	# Загружаем текстуру топливного астероида
+	if not fuel_asteroid_texture:
+		var fuel_texture_path = "res://Assets/Images/Asteroid/Asteroid_fuel.svg"
+		if ResourceLoader.exists(fuel_texture_path):
+			fuel_asteroid_texture = load(fuel_texture_path) as Texture2D
+		else:
+			# Если специальной текстуры нет, используем обычную с другим оттенком
+			if not asteroid_textures.is_empty():
+				fuel_asteroid_texture = asteroid_textures[0]
 
 func update_deletion_bounds():
 	"""Обновляет границы удаления астероидов"""
@@ -171,10 +185,18 @@ func setup_asteroid_properties(asteroid: Asteroid):
 	asteroid.max_health = health
 	asteroid.current_health = health
 	
-	# Случайная текстура (если доступны)
-	if not asteroid_textures.is_empty():
-		var texture = asteroid_textures[randi() % asteroid_textures.size()]
-		set_asteroid_texture(asteroid, texture)
+	# Определяем, будет ли это топливный астероид
+	var is_fuel = randf() < fuel_asteroid_chance
+	
+	if is_fuel and fuel_asteroid_texture:
+		# Настраиваем как топливный астероид
+		asteroid.setup_as_fuel_asteroid(fuel_asteroid_texture)
+		print("Заспавнен топливный астероид!")
+	else:
+		# Обычный астероид - случайная текстура (если доступны)
+		if not asteroid_textures.is_empty():
+			var texture = asteroid_textures[randi() % asteroid_textures.size()]
+			set_asteroid_texture(asteroid, texture)
 	
 	# Случайный поворот
 	asteroid.rotation = randf() * TAU

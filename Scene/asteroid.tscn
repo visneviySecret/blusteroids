@@ -1,7 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://bfirs6k1mblfn"]
+[gd_scene load_steps=5 format=3 uid="uid://bfirs6k1mblfn"]
 
 [ext_resource type="Script" path="res://Scripts/Asteroid/asteroid.gd" id="1_anp0i"]
-[ext_resource type="Texture2D" uid="uid://cq2ysgr8tb7qy" path="res://Assets/Images/Asteroid/Asteroid.svg" id="1_pn0v1"]
+[ext_resource type="PackedScene" uid="uid://b7ghxeko31pqi" path="res://Scene/asteroid_fuel.tscn" id="3_fortp"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_anp0i"]
+load_path = "res://.godot/imported/Asteroid.svg-912f1d9de7f966e0f0a9808e520020c2.ctex"
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_anp0i"]
 radius = 23.0
@@ -12,9 +15,17 @@ z_index = 10
 script = ExtResource("1_anp0i")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_pn0v1")
+texture_filter = 1
+texture = SubResource("CompressedTexture2D_anp0i")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(-1, 0)
 rotation = -1.5708
 shape = SubResource("CapsuleShape2D_anp0i")
+
+[node name="AsteroidFuel" parent="." instance=ExtResource("3_fortp")]
+offset_left = -25.0
+offset_top = -22.0
+offset_right = 25.0
+offset_bottom = 23.0
+pivot_offset = Vector2(25, -6)

@@ -28,9 +28,17 @@ const Layers = preload("res://Scripts/config/collision_layers.gd")
 @export var inertia_friction: float = 0.0  # Трение для замедления астероида
 @export var inertia_min_speed: float = 15.0  # Минимальная скорость для остановки астероида
 
+# Параметры топливного астероида
+@export var is_fuel_asteroid: bool = false  # Является ли астероид топливным
+@export var fuel_amount: float = 50.0  # Количество топлива в астероиде
+@export var max_fuel_amount: float = 50.0  # Максимальное количество топлива
+@export var fuel_extraction_rate: float = 10.0  # Скорость добычи топлива в секунду
+@export var fuel_asteroid_texture: Texture2D  # Специальная текстура для топливного астероида
+
 var current_health: float
 var asteroid_sprite: Sprite2D
 var collision_shape: CollisionShape2D
+var fuel_progress_bar: TextureProgressBar  # Прогресс бар топлива
 
 # Состояние езды
 var is_being_ridden: bool = false
@@ -59,6 +67,10 @@ var inertia_params: MovementSystem.InertiaParams
 # Параметры движения для общей системы
 var movement_params: MovementSystem.MovementParams
 
+# Переменные для контроля показа лейблов
+var fuel_label_timer: float = 0.0
+var fuel_label_interval: float = 1.0  # Показывать лейбл каждую секунду
+
 func _ready():
 	current_health = max_health
 	setup_asteroid()
@@ -71,6 +83,10 @@ func _ready():
 	inertia_params = MovementSystem.InertiaParams.new(
 		inertia_friction, inertia_min_speed, 0.6, 0.5
 	)
+	
+	# Скрываем прогресс бар топлива для обычных астероидов
+	if fuel_progress_bar and not is_fuel_asteroid:
+		fuel_progress_bar.visible = false
 
 func setup_asteroid():
 	"""Настраивает астероид"""
@@ -98,6 +114,13 @@ func _physics_process(delta):
 		# Движение с игроком
 		update_movement(delta)
 		update_rider_position()
+		
+		# Обработка добычи топлива если это топливный астероид
+		if is_fuel_asteroid:
+			var player_fuel_system = find_player_fuel_system()
+			if player_fuel_system:
+				update_fuel_extraction(delta, player_fuel_system)
+		
 	elif is_moving_by_inertia:
 		# Инерционное движение после спрыгивания игрока
 		update_inertia_movement(delta)
@@ -288,12 +311,14 @@ func is_moving() -> bool:
 
 func find_existing_components():
 	"""Находит существующие компоненты астероида в сцене"""
-	# Ищем спрайт
+	# Ищем спрайт и прогресс бар топлива
 	for child in get_children():
 		if child is Sprite2D:
 			asteroid_sprite = child
 		elif child is CollisionShape2D:
 			collision_shape = child
+		elif child is TextureProgressBar and child.name == "AsteroidFuel":
+			fuel_progress_bar = child
 
 func can_be_grappled() -> bool:
 	"""Проверяет, можно ли зацепиться за этот астероид"""
@@ -461,3 +486,123 @@ func get_autonomous_velocity() -> Vector2:
 func is_moving_autonomously_check() -> bool:
 	"""Проверяет, движется ли астероид автономно"""
 	return is_moving_autonomously 
+
+# === МЕТОДЫ ТОПЛИВНОГО АСТЕРОИДА ===
+
+func setup_as_fuel_asteroid(fuel_texture: Texture2D = null):
+	"""Настраивает астероид как топливный"""
+	is_fuel_asteroid = true
+	fuel_amount = max_fuel_amount
+	
+	# Добавляем в группу топливных астероидов
+	add_to_group("fuel_asteroids")
+	
+	# Устанавливаем специальную текстуру если предоставлена
+	if fuel_texture and asteroid_sprite:
+		asteroid_sprite.texture = fuel_texture
+		fuel_asteroid_texture = fuel_texture
+	
+	# Настраиваем прогресс бар топлива
+	setup_fuel_progress_bar()
+
+func setup_fuel_progress_bar():
+	"""Настраивает прогресс бар топлива"""
+	if fuel_progress_bar:
+		fuel_progress_bar.max_value = max_fuel_amount
+		fuel_progress_bar.value = fuel_amount
+		fuel_progress_bar.visible = is_fuel_asteroid
+		print("Настройка прогресс бара топлива: max=%.2f, current=%.2f, visible=%s" % [max_fuel_amount, fuel_amount, is_fuel_asteroid])
+	else:
+		print("Предупреждение: прогресс бар топлива не найден!")
+
+func update_fuel_extraction(delta: float, player_fuel_system: PlayerFuelSystem):
+	"""Обновляет добычу топлива когда игрок находится на астероиде"""
+	if not is_fuel_asteroid or not is_being_ridden or fuel_amount <= 0:
+		return
+	
+	# Вычисляем количество топлива для добычи
+	var fuel_to_extract = fuel_extraction_rate * delta
+	fuel_to_extract = min(fuel_to_extract, fuel_amount)
+	
+	# Обновляем таймер для лейблов
+	fuel_label_timer += delta
+	
+	# Добавляем топливо игроку
+	if player_fuel_system:
+		# Накапливаем топливо для показа в лейбле
+		if fuel_label_timer >= fuel_label_interval:
+			var accumulated_fuel = fuel_extraction_rate * fuel_label_timer
+			accumulated_fuel = min(accumulated_fuel, fuel_amount)
+			player_fuel_system.add_fuel_bonus(accumulated_fuel)
+			fuel_label_timer = 0.0
+		else:
+			# Добавляем топливо без визуального эффекта
+			player_fuel_system.change_fuel(fuel_to_extract)
+	
+	# Уменьшаем топливо в астероиде
+	fuel_amount -= fuel_to_extract
+	fuel_amount = max(0, fuel_amount)
+	
+	# Обновляем прогресс бар
+	update_fuel_progress_bar()
+	
+	# Если топливо закончилось, превращаем в обычный астероид
+	if fuel_amount <= 0:
+		convert_to_normal_asteroid()
+
+func update_fuel_progress_bar():
+	"""Обновляет визуальное отображение прогресс бара топлива"""
+	if fuel_progress_bar:
+		fuel_progress_bar.value = fuel_amount
+
+func convert_to_normal_asteroid():
+	"""Превращает топливный астероид в обычный после исчерпания топлива"""
+	is_fuel_asteroid = false
+	
+	# Убираем из группы топливных астероидов
+	remove_from_group("fuel_asteroids")
+	
+	# Скрываем прогресс бар
+	if fuel_progress_bar:
+		fuel_progress_bar.visible = false
+	
+	# Возвращаем обычную текстуру если есть
+	restore_normal_texture()
+
+func restore_normal_texture():
+	"""Возвращает обычную текстуру астероида"""
+	if asteroid_sprite and fuel_asteroid_texture:
+		# Загружаем базовую текстуру астероида
+		var normal_texture = load("res://Assets/Images/Asteroid/Asteroid.svg") as Texture2D
+		if normal_texture:
+			asteroid_sprite.texture = normal_texture
+
+func get_fuel_amount() -> float:
+	"""Возвращает текущее количество топлива в астероиде"""
+	return fuel_amount
+
+func get_fuel_percentage() -> float:
+	"""Возвращает процент топлива в астероиде"""
+	if max_fuel_amount <= 0:
+		return 0.0
+	return fuel_amount / max_fuel_amount
+
+func is_fuel_depleted() -> bool:
+	"""Проверяет, исчерпано ли топливо в астероиде"""
+	return fuel_amount <= 0
+
+func can_extract_fuel() -> bool:
+	"""Проверяет, можно ли добывать топливо из астероида"""
+	return is_fuel_asteroid and fuel_amount > 0 and is_being_ridden 
+
+func find_player_fuel_system() -> PlayerFuelSystem:
+	"""Находит систему топлива игрока"""
+	if not rider:
+		return null
+	
+	# Ищем PlayerFuelSystem среди дочерних узлов игрока
+	for child in rider.get_children():
+		if child is PlayerFuelSystem:
+			return child as PlayerFuelSystem
+	
+	return null 

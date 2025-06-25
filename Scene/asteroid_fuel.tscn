@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://b7ghxeko31pqi"]
+
+[ext_resource type="Texture2D" uid="uid://bva3rocja142a" path="res://Assets/Images/Asteroid/Asteroid_fuel_progress.svg" id="1_hyk0x"]
+
+[node name="AsteroidFuel" type="TextureProgressBar"]
+texture_filter = 1
+offset_right = 40.0
+offset_bottom = 40.0
+value = 100.0
+fill_mode = 3
+texture_progress = ExtResource("1_hyk0x")
