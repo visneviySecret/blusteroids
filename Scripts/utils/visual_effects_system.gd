@@ -85,6 +85,47 @@ static func create_blinking_effect(sprite: Sprite2D, blink_count: int = 3, blink
 	sprite.add_child(blink_timer)
 	blink_timer.start()
 
+static func create_continuous_blinking_effect(sprite: Sprite2D, blink_duration: float = 0.3):
+	"""Создает постоянный эффект мерцания спрайта"""
+	if not sprite:
+		return
+	
+	# Проверяем, не мерцает ли уже спрайт
+	var existing_timer = sprite.get_node_or_null("ContinuousBlinkTimer")
+	if existing_timer:
+		existing_timer.queue_free()  # Удаляем старый таймер
+	
+	# Сохраняем ТЕКУЩЕЕ состояние спрайта как базовое
+	var base_modulate = sprite.modulate
+	var is_bright = true
+	
+	var blink_timer = Timer.new()
+	blink_timer.name = "ContinuousBlinkTimer"
+	blink_timer.wait_time = blink_duration
+	blink_timer.timeout.connect(func():
+		if sprite and is_instance_valid(sprite):
+			# Сохраняем текущую альфу (для работы с исчезновением)
+			var current_alpha = sprite.modulate.a
+			# Переключаем яркость относительно базового состояния, но сохраняем альфу
+			if is_bright:
+				sprite.modulate = Color(base_modulate.r * 0.3, base_modulate.g * 0.3, base_modulate.b * 0.3, current_alpha)
+			else:
+				sprite.modulate = Color(base_modulate.r, base_modulate.g, base_modulate.b, current_alpha)
+			is_bright = not is_bright
+	)
+	
+	sprite.add_child(blink_timer)
+	blink_timer.start()
+
+static func stop_continuous_blinking_effect(sprite: Sprite2D):
+	"""Останавливает постоянное мерцание спрайта"""
+	if not sprite:
+		return
+	
+	var blink_timer = sprite.get_node_or_null("ContinuousBlinkTimer")
+	if blink_timer:
+		blink_timer.queue_free()
+
 # Вспомогательный класс для счетчика мерцаний
 class BlinkCounter:
 	var remaining: int = 0

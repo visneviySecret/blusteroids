@@ -272,6 +272,10 @@ func destroy_ship():
 	# Меняем текстуру на поврежденную
 	change_to_destroyed_texture()
 	
+	# Начинаем постоянное мерцание разрушенного корабля
+	if ship_sprite:
+		VisualEffects.create_continuous_blinking_effect(ship_sprite, 0.4)
+	
 	# Устанавливаем скорость движения обломков
 	set_wreckage_velocity(current_velocity)
 	
@@ -372,15 +376,13 @@ func loot_wreckage():
 		
 	is_looted = true
 	
-	# Дополнительно затемняем текстуру
+	# НЕ затемняем текстуру сразу - пусть мерцание продолжается
+	# Вместо этого создаем более заметный эффект мерцания для разграбленных обломков
 	if ship_sprite:
-		var current_modulate = ship_sprite.modulate
-		ship_sprite.modulate = Color(
-			current_modulate.r * 0.5,
-			current_modulate.g * 0.5, 
-			current_modulate.b * 0.5,
-			current_modulate.a
-		)
+		# Останавливаем старое мерцание
+		VisualEffects.stop_continuous_blinking_effect(ship_sprite)
+		# Запускаем более быстрое мерцание для разграбленных обломков
+		VisualEffects.create_continuous_blinking_effect(ship_sprite, 0.2)
 	
 	# Отключаем область лута
 	var loot_area = get_node_or_null("LootArea")
@@ -432,7 +434,11 @@ func fade_out_wreckage():
 	# Создаем твин для плавного исчезновения
 	var tween = create_tween()
 	tween.tween_property(ship_sprite, "modulate:a", 0.0, fade_time)
-	tween.tween_callback(func(): queue_free())
+	tween.tween_callback(func(): 
+		# Останавливаем мерцание только в самом конце
+		VisualEffects.stop_continuous_blinking_effect(ship_sprite)
+		queue_free()
+	)
 
 func on_ship_destroyed():
 	"""Вызывается при уничтожении корабля (для переопределения в наследниках)"""
@@ -628,10 +634,6 @@ func perform_death_shot():
 	
 	# Создаем лазерный снаряд специальным методом для мертвых кораблей
 	shoot_death_laser(shoot_direction)
-	
-	# Визуальный эффект дополнительного выстрела
-	if ship_sprite:
-		VisualEffects.create_blinking_effect(ship_sprite, 2, 0.15) 
 
 func shoot_death_laser(direction: Vector2):
 	"""Создает и запускает лазерный снаряд для дополнительного выстрела после смерти"""
