@@ -176,7 +176,8 @@ func calculate_asteroid_top() -> float:
 			var circle = collision_shape.shape as CircleShape2D
 			top_offset = shape_position - circle.radius
 	
-	return top_offset
+	# Учитываем масштаб астероида при вычислении верхней точки
+	return top_offset * scale.y
 
 func stop_riding():
 	"""Останавливает езду на астероиде"""

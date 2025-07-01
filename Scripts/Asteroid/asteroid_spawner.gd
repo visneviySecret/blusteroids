@@ -17,8 +17,8 @@ signal asteroid_destroyed(asteroid: Asteroid)
 @export var spawn_distance: float = 300.0  # Расстояние за пределами экрана для спавна
 
 # Параметры размера астероидов
-@export var min_scale: float = 1.5  # Минимальный размер (50%)
-@export var max_scale: float = 4.0  # Максимальный размер (200%)
+@export var min_scale: float = 1  # Минимальный размер (50%)
+@export var max_scale: float = 1  # Максимальный размер 
 
 # Параметры скорости астероидов
 @export var min_speed: float = 100.0   # Минимальная скорость
@@ -29,7 +29,7 @@ signal asteroid_destroyed(asteroid: Asteroid)
 @export var health_scale_multiplier: float = 1.1  # Увеличение здоровья для больших астероидов
 
 # Параметры топливных астероидов
-@export var fuel_asteroid_chance: float = 1  # 0% шанс спавна топливного астероида
+@export var fuel_asteroid_chance: float = 0.4  # 20% шанс спавна топливного астероида
 @export var fuel_asteroid_texture: Texture2D  # Специальная текстура для топливных астероидов
 
 # Ссылки на ресурсы
@@ -198,8 +198,8 @@ func setup_asteroid_properties(asteroid: Asteroid):
 			var texture = asteroid_textures[randi() % asteroid_textures.size()]
 			set_asteroid_texture(asteroid, texture)
 	
-	# Случайный поворот
-	asteroid.rotation = randf() * TAU
+	# # Случайный поворот
+	# asteroid.rotation = randf() * TAU
 
 func set_asteroid_texture(asteroid: Asteroid, texture: Texture2D):
 	"""Устанавливает текстуру астероида"""
