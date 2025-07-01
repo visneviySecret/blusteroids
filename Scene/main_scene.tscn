@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://dm7xvmwbyolcb"]
+[gd_scene load_steps=8 format=3 uid="uid://dm7xvmwbyolcb"]
 
 [ext_resource type="PackedScene" uid="uid://ck44px42ecqy1" path="res://Scene/player.tscn" id="3_lttqn"]
 [ext_resource type="PackedScene" uid="uid://bevywlj1ombbj" path="res://Scene/enemy_ship_spawner.tscn" id="4_4kvl3"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://Scene/camera_follow.tscn" id="6_camera"]
 [ext_resource type="PackedScene" uid="uid://dv26fo5pgouk2" path="res://Scene/background.tscn" id="6_lee88"]
 [ext_resource type="Script" uid="uid://c8qdusmb5fi77" path="res://Scripts/Camera/camera_manager.gd" id="7_camera_manager"]
+[ext_resource type="Script" path="res://Scripts/UI/game_tutorial_ui.gd" id="8_tutorial"]
 
 [node name="MainScene" type="Node2D"]
 
@@ -22,3 +23,106 @@ position = Vector2(839, 510)
 [node name="AsteroidSpawner" parent="." instance=ExtResource("5_lttqn")]
 
 [node name="Background" parent="." instance=ExtResource("6_lee88")]
+
+[node name="GameTutorialUI" type="CanvasLayer" parent="."]
+script = ExtResource("8_tutorial")
+
+[node name="TutorialOverlay" type="Control" parent="GameTutorialUI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="TutorialPanel" type="Panel" parent="GameTutorialUI/TutorialOverlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_bottom = 600.0
+modulate = Color(1, 1, 1, 0.9)
+
+[node name="TutorialContainer" type="VBoxContainer" parent="GameTutorialUI/TutorialOverlay/TutorialPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+
+[node name="HeaderContainer" type="HBoxContainer" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="TutorialTitle" type="Label" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ТУТОРИАЛ"
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer/HeaderContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="HSeparator" type="HSeparator" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer"]
+layout_mode = 2
+
+[node name="TutorialScrollContainer" type="ScrollContainer" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TutorialText" type="RichTextLabel" parent="GameTutorialUI/TutorialOverlay/TutorialPanel/TutorialContainer/TutorialScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[center][color=gold][b]РУКОВОДСТВО ПО ИГРЕ[/b][/color][/center]
+
+[color=lightblue][b]🚀 УПРАВЛЕНИЕ:[/b][/color]
+• [color=yellow]WASD[/color] - Движение корабля
+• [color=yellow]ЛКМ[/color] - Стрельба лазерами
+• [color=yellow]Пробел + WASD[/color] - Дэш (тратит топливо)
+
+[color=lightgreen][b]🪝 КРЮК-КОШКА:[/b][/color]
+• [color=yellow]ПКМ[/color] - Запуск/возврат крюка
+• Цепляйтесь за астероиды и корабли
+
+[color=orange][b]⛽ ТОПЛИВО:[/b][/color]
+• Тратится при движении и додже
+• Восстанавливается в покое
+• При нехватке скорость снижается
+• [color=green]Зелёные астероиды[/color] содержат топливо
+
+[color=lightcoral][b]🪨 ТОПЛИВНЫЕ АСТЕРОИДЫ:[/b][/color]
+• Зацепитесь за [color=green]зелёный астероид[/color] и \"садитесь\" на него
+• Топливо передается автоматически
+• Прогресс бар показывает остаток
+
+[color=yellow][b]⚔️ ВРАГИ:[/b][/color]
+• Уничтожайте [color=orange] корабли[/color]
+• Разграбляйте обломки для топлива
+• [color=red]Осторожно:[/color] посмертные выстрелы!
+
+[color=lightgreen][b]💡 СОВЕТЫ:[/b][/color]
+• Используйте крюк для маневров
+• Экономьте топливо
+• Ищите топливные астероиды
+• Держитесь подальше от обломков и багов
+
+[color=gray][i]Нажмите T чтобы скрыть/показать[/i][/color]"
+autowrap_mode = 3
+scroll_active = false
+
+[node name="QuickHelpButton" type="Button" parent="GameTutorialUI/TutorialOverlay"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -40.0
+offset_right = 110.0
+offset_bottom = -10.0
+text = "ТУТОРИАЛ (T)"
